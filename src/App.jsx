@@ -367,6 +367,10 @@ function Simulator({ config, onFinish, saved = {} }) {
   const [timeLeft, setTimeLeft] = useState(saved.timeLeft ?? config.durationMinutes * 60)
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState(saved.lastResult || null)
+  const [index, setIndex] = useState(0)
+
+  const total = config.questions.length
+  const q = config.questions[index]
 
   useEffect(() => {
     if (submitted) return
@@ -382,21 +386,28 @@ function Simulator({ config, onFinish, saved = {} }) {
 
   const score = useMemo(() => {
     let s = 0
-    config.questions.forEach((q) => { if (answers[q.id] === q.answerIndex) s += 1 })
+    config.questions.forEach((qq) => { if (answers[qq.id] === qq.answerIndex) s += 1 })
     return s
   }, [answers, config.questions])
 
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, '0')
   const ss = String(timeLeft % 60).padStart(2, '0')
+  const atStart = index === 0
+  const atEnd = index === total - 1
+
+  function go(delta){
+    const next = Math.min(total - 1, Math.max(0, index + delta))
+    setIndex(next)
+  }
 
   function submitNow(){
     setSubmitted(true)
     const byDomain = {}
-    for (const q of config.questions){
-      const dom = q.domain || 'General'
+    for (const qq of config.questions){
+      const dom = qq.domain || 'General'
       byDomain[dom] = byDomain[dom] || { correct:0, total:0 }
       byDomain[dom].total += 1
-      if ((answers[q.id] ?? -1) === q.answerIndex) byDomain[dom].correct += 1
+      if ((answers[qq.id] ?? -1) === qq.answerIndex) byDomain[dom].correct += 1
     }
     const worst = Object.entries(byDomain)
       .map(([dom, d]) => ({ dom, pct: d.total? d.correct/d.total : 0 }))
@@ -414,43 +425,46 @@ function Simulator({ config, onFinish, saved = {} }) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between rounded-xl border p-3">
-          <div className="text-sm text-gray-500">Duración</div>
+          <div className="text-sm text-gray-500">Tiempo restante</div>
           <div className="flex items-center gap-3 text-lg font-semibold"><Clock className="h-5 w-5"/> {mm}:{ss}</div>
         </div>
 
-        {config.questions.map((q, idx) => (
-          <div key={q.id} className="rounded-2xl border p-4">
-            <div className="mb-2 text-sm text-gray-500">Pregunta {idx + 1} de {config.questions.length}</div>
-            <div className="mb-3 font-medium">{q.prompt}</div>
-            <div className="grid gap-2 md:grid-cols-2">
-              {q.options.map((opt, i) => (
-                <button
-                  key={i}
-                  disabled={submitted}
-                  className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? 'border-black' : ''}`}
-                  onClick={() => setAnswers({ ...answers, [q.id]: i })}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
+        {/* Pregunta actual */}
+        <div className="rounded-2xl border p-4">
+          <div className="mb-2 text-sm text-gray-500">Pregunta {index + 1} de {total}</div>
+          <div className="mb-3 font-medium">{q.prompt}</div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {q.options.map((opt, i) => (
+              <button
+                key={i}
+                disabled={submitted}
+                className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? 'border-black' : ''}`}
+                onClick={() => setAnswers({ ...answers, [q.id]: i })}
+              >
+                {opt}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
 
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {submitted ? <>Puntaje: <strong>{score}</strong> / {config.questions.length}</> : <>Selecciona tus respuestas. El examen se envía al agotar el tiempo o al presionar "Enviar".</>}
+            {submitted ? <>Puntaje: <strong>{score}</strong> / {total}</> : <>Responde y navega. Envía al final o cuando se agote el tiempo.</>}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setAnswers({}); setSubmitted(false); setResult(null); setTimeLeft(config.durationMinutes*60) }}><RefreshCw className="mr-2 h-4 w-4"/> Reiniciar</Button>
-            <Button onClick={submitNow}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
+            <Button variant="outline" onClick={() => go(-1)} disabled={atStart}><RefreshCw className="mr-2 h-4 w-4 rotate-180"/> Anterior</Button>
+            {!atEnd ? (
+              <Button onClick={() => go(1)}><Play className="mr-2 h-4 w-4"/> Siguiente</Button>
+            ) : (
+              <Button onClick={submitNow}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
+            )}
           </div>
         </div>
 
         <ResultsCard result={result} />
       </CardContent>
     </Card>
-  );
+  )
 }
 
 // ———————————— Actividad abierta ————————————
@@ -730,5 +744,6 @@ export default function RiskCourseApp() {
     </div>
   )
 }
+
 
 
