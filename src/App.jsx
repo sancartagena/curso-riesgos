@@ -1,200 +1,249 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
-import { BookOpen, CheckCircle2, Clock, Download, FileText, History, LayoutDashboard, Play, RefreshCw, ShieldAlert, Target, Upload, XCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Progress } from '@/components/ui/progress'
+import React, { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { BookOpen, CheckCircle2, Clock, Download, FileText, History, LayoutDashboard, Play, RefreshCw, ShieldAlert, Target, Upload, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 
+/**
+ * MVP – Plataforma online de preparación para certificación en gestión de riesgos
+ * Características:
+ * - Estructura por módulos con lecciones, actividades y mini‑exámenes.
+ * - Simulador de examen final con temporizador.
+ * - Retroalimentación inmediata, métricas de desempeño y progreso persistente (localStorage).
+ * - Exportar/Importar avance y respuestas (JSON).
+ * - Estilo moderno con Tailwind + shadcn/ui. Animaciones con Framer Motion.
+ *
+ * Cómo extender:
+ * - Agrega preguntas en COURSE.modules[].quizzes[].questions.
+ * - Agrega lecciones/actividades en COURSE.modules[].lessons / activities.
+ * - Ajusta la duración del simulador en COURSE.simulator.durationMinutes.
+ */
+
+// ———————————— Datos del curso (puedes editar libremente) ————————————
 const COURSE = {
-  title: 'Preparación para Certificación en Gestión de Riesgos (PMI‑RMP®)',
+  title: 'Preparación para Certificación en Gestión de Riesgos (PMI-RMP®)',
   subtitle: 'Curso práctico con actividades y exámenes',
   simulator: {
-    durationMinutes: 25,
+    durationMinutes: 60,
     questions: [
-      {
-        id: 'simq1',
-        prompt: 'Estás planificando la gestión de riesgos en un proyecto de Odoo ERP con fuerte resistencia al cambio. ¿Cuál es la MEJOR acción inicial?',
-        options: [
-          'Aplicar de inmediato reservas de contingencia en el cronograma',
-          'Definir roles, apetito de riesgo y umbrales con los interesados clave',
-          'Ejecutar entrevistas para identificar riesgos técnicos',
-          'Elevar un cambio de alcance para añadir un plan de comunicación',
-        ],
-        answerIndex: 1,
-        explanation: 'El proceso \'Planificar la Gestión de Riesgos\' establece el marco: roles, apetito y umbrales. Luego profundizas en identificación y planes de respuesta.',
-        domain: 'Planificación',
-      },
-      {
-        id: 'simq2',
-        prompt: 'Tienes una lista extensa de riesgos. El patrocinador te pide priorizar en una reunión hoy. ¿Qué herramienta cualitativa usas primero?',
-        options: [
-          'Simulación Monte Carlo',
-          'Árbol de decisiones',
-          'Matriz probabilidad‑impacto con criterios estandarizados',
-          'Análisis de sensibilidad tornado',
-        ],
-        answerIndex: 2,
-        explanation: 'La priorización inicial se hace con análisis cualitativo (probabilidad‑impacto) antes del cuantitativo.',
-        domain: 'Análisis cualitativo',
-      },
-      {
-        id: 'simq3',
-        prompt: 'Un riesgo positivo (oportunidad) permitiría reducir 8% el tiempo de pruebas si se contrata un experto externo. Mejor estrategia:',
-        options: ['Aceptar', 'Explotar', 'Transferir', 'Mitigar'],
-        answerIndex: 1,
-        explanation: 'Para oportunidades, \'Explotar\' maximiza la probabilidad de que ocurra tomando acciones proactivas (p. ej., contratar al experto).',
-        domain: 'Respuestas a oportunidades',
-      },
-      {
-        id: 'simq4',
-        prompt: 'Durante el seguimiento, notas que un plan de respuesta no se ejecutó a tiempo y el disparador (trigger) ya ocurrió. ¿Qué haces primero?',
-        options: [
-          'Registrar una lección aprendida y cerrar el riesgo',
-          'Ejecutar el plan de contingencia y actualizar el registro',
-          'Recalcular las reservas de gestión',
-          'Abrir un cambio para modificar la EDT',
-        ],
-        answerIndex: 1,
-        explanation: 'Si el trigger ocurrió y el plan preventivo falló, activa la contingencia y actualiza el registro/monitoreo.',
-        domain: 'Monitoreo y control',
-      },
+      // --- Simulador: mezcla de dominios (25 preguntas) ---
+      { id: 'simq1', prompt: 'Estás planificando la gestión de riesgos en un proyecto de Odoo ERP con fuerte resistencia al cambio. ¿Cuál es la MEJOR acción inicial?', options: ['Aplicar de inmediato reservas de contingencia en el cronograma','Definir roles, apetito de riesgo y umbrales con los interesados clave','Ejecutar entrevistas para identificar riesgos técnicos','Elevar un cambio de alcance para añadir un plan de comunicación'], answerIndex: 1, explanation: 'En Planificar la Gestión de Riesgos se establecen roles, apetito y umbrales antes de identificar y responder.', domain: 'Planificación' },
+      { id: 'simq2', prompt: 'Tienes una lista extensa de riesgos. El patrocinador te pide priorizar hoy. ¿Qué herramienta cualitativa usas primero?', options: ['Simulación Monte Carlo','Árbol de decisiones','Matriz probabilidad-impacto con criterios estandarizados','Análisis de sensibilidad (tornado)'], answerIndex: 2, explanation: 'La priorización inicial se aborda con análisis cualitativo prob‑impacto.', domain: 'Análisis cualitativo' },
+      { id: 'simq3', prompt: 'Una oportunidad permitiría reducir 8% el tiempo de pruebas si se contrata un experto externo. Mejor estrategia:', options: ['Aceptar','Explotar','Transferir','Mitigar'], answerIndex: 1, explanation: 'Explotar maximiza la probabilidad de que la oportunidad ocurra.', domain: 'Respuestas a oportunidades' },
+      { id: 'simq4', prompt: 'El disparador (trigger) ocurrió y la acción preventiva no se ejecutó. ¿Qué haces primero?', options: ['Registrar lección y cerrar','Ejecutar la contingencia y actualizar el registro','Recalcular reservas de gestión','Solicitar cambio a la EDT'], answerIndex: 1, explanation: 'Activa la contingencia y actualiza el registro/seguimiento.', domain: 'Monitoreo y control' },
+      { id: 'simq5', prompt: 'El plan de gestión de riesgos debe definir, entre otros, los umbrales. ¿Qué enunciado es correcto?', options: ['Los umbrales se definen solo para costos','Los umbrales son límites cuantitativos que disparan acciones','Los umbrales reemplazan al apetito','Los umbrales son exclusivos de riesgos técnicos'], answerIndex: 1, explanation: 'Umbrales = límites cuantitativos/condiciones que disparan acciones.', domain: 'Planificación' },
+      { id: 'simq6', prompt: 'Qué salida PRODUCE Identificar Riesgos?', options: ['Plan de gestión de riesgos','Registro de riesgos actualizado','Matriz prob‑impacto','Reservas de contingencia'], answerIndex: 1, explanation: 'La salida principal es el registro de riesgos (y atributos iniciales).', domain: 'Identificación' },
+      { id: 'simq7', prompt: 'Cuál es el objetivo del análisis cuantitativo?', options: ['Determinar causas raíz','Priorizar cualitativamente','Cuantificar efecto en objetivos con datos numéricos','Definir responsables'], answerIndex: 2, explanation: 'El análisis cuantitativo cuantifica el efecto con modelos numéricos.', domain: 'Análisis cuantitativo' },
+      { id: 'simq8', prompt: 'Reserva usada para eventos identificados con plan de respuesta:', options: ['Reserva de gestión','Reserva de contingencia','Amortiguador de cadena crítica','Holgura total'], answerIndex: 1, explanation: 'Contingencia = para riesgos identificados; gestión = para desconocidos.', domain: 'Planificación de respuestas' },
+      { id: 'simq9', prompt: 'Mejor técnica para descubrir riesgos sistémicos entre áreas:', options: ['Lista de verificación','Entrevistas 1:1','Análisis de supuestos y restricciones','Análisis de árbol de fallos'], answerIndex: 2, explanation: 'Los supuestos/restricciones mal planteados revelan riesgos sistémicos.', domain: 'Identificación' },
+      { id: 'simq10', prompt: 'En un árbol de decisiones, eligiendo una alternativa con EMV mayor, ¿qué estás maximizando?', options: ['Valor esperado','Valor mínimo garantizado','Probabilidad de éxito','ROI contable'], answerIndex: 0, explanation: 'El EMV (Expected Monetary Value) guía la elección bajo incertidumbre.', domain: 'Cuantitativo' },
+      { id: 'simq11', prompt: 'Qué estrategia NO corresponde a amenazas:', options: ['Evitar','Mitigar','Transferir','Explotar'], answerIndex: 3, explanation: 'Explotar es estrategia de oportunidades.', domain: 'Respuestas' },
+      { id: 'simq12', prompt: 'Indicador útil en seguimiento de riesgos para saber si las respuestas están funcionando:', options: ['SPI','KRI (indicador clave de riesgo)','IRR','Lead time'], answerIndex: 1, explanation: 'KRIs miden exposición y eficacia de respuestas.', domain: 'Monitoreo' },
+      { id: 'simq13', prompt: 'Qué documento define “quién informa qué, a quién y cuándo” sobre riesgos?', options: ['Plan de comunicaciones','Registro de interesados','Plan de riesgos','Acta de constitución'], answerIndex: 2, explanation: 'El plan de riesgos incluye reporting/formatos de comunicación.', domain: 'Planificación' },
+      { id: 'simq14', prompt: 'Qué técnica acelera la identificación en grupos numerosos y reduce sesgo del dominador?', options: ['Entrevistas','Delphi','Revisión de documentos','Lluvia de ideas abierta'], answerIndex: 1, explanation: 'Delphi logra consenso anónimo y reduce sesgos.', domain: 'Identificación' },
+      { id: 'simq15', prompt: 'Si la distribución de duraciones es altamente asimétrica, qué simulación captura mejor esa realidad?', options: ['Uniforme','Normal','Triangular/PERT','Binomial'], answerIndex: 2, explanation: 'Triangular/PERT modelan asimetría en tareas.', domain: 'Cuantitativo' },
+      { id: 'simq16', prompt: 'Cambiar proveedor para reducir probabilidad de falla es ejemplo de:', options: ['Mitigar','Transferir','Aceptar','Escalar'], answerIndex: 0, explanation: 'Mitigar reduce probabilidad/impacto de amenazas.', domain: 'Respuestas' },
+      { id: 'simq17', prompt: 'Qué elemento del registro de riesgos facilita auditar la efectividad de las respuestas?', options: ['Categoría RBS','Propietario del riesgo','Estrategia y plan de respuesta','Fecha de identificación'], answerIndex: 2, explanation: 'Estrategia + plan permiten evaluar ejecución/efectividad.', domain: 'Registro' },
+      { id: 'simq18', prompt: 'Cuál es la mejor fuente para identificar riesgos de cumplimiento en banca?', options: ['Lecciones aprendidas internas','Normativa del regulador','Encuesta de clima','WBS'], answerIndex: 1, explanation: 'La normativa aplicable origina requisitos y riesgos de cumplimiento.', domain: 'Identificación' },
+      { id: 'simq19', prompt: 'Una respuesta a oportunidad “compartir” se parece más a:', options: ['Mitigar','Transferir','Explotar','Escalar'], answerIndex: 1, explanation: 'Compartir oportunidades = alianza/contrato para repartir beneficios.', domain: 'Respuestas' },
+      { id: 'simq20', prompt: 'Qué debes hacer si un riesgo residual supera el umbral?', options: ['Aceptarlo documentado','Escalarlo y/o planificar respuesta adicional','Cerrar el riesgo','Ignorarlo si la probabilidad es baja'], answerIndex: 1, explanation: 'Si supera umbral, requiere decisión/escalamiento o respuesta extra.', domain: 'Monitoreo' },
+      { id: 'simq21', prompt: 'Relación correcta entre RBS y EDT:', options: ['RBS descompone entregables','RBS descompone fuentes/categorías de riesgo','Son equivalentes','Ninguna'], answerIndex: 1, explanation: 'EDT = entregables; RBS = categorías/fuentes de riesgo.', domain: 'Fundamentos' },
+      { id: 'simq22', prompt: 'Cuál es una salida del análisis cualitativo?', options: ['Lista priorizada de riesgos','Curvas S','EMV de alternativas','Plan de reservas'], answerIndex: 0, explanation: 'Salida típica: lista priorizada con puntuaciones y racionales.', domain: 'Cualitativo' },
+      { id: 'simq23', prompt: 'Quién es responsable de ejecutar el plan de respuesta?', options: ['PMO','Propietario del riesgo','Patrocinador','Comité de dirección'], answerIndex: 1, explanation: 'Cada riesgo tiene un owner para ejecutar/coordinar respuestas.', domain: 'Gobernanza' },
+      { id: 'simq24', prompt: 'Cuál métrica mirarías para saber si una respuesta de transferencia (seguro) fue adecuada?', options: ['Prima vs cobertura y deducible','Nº de reuniones','Duración del proyecto','% de alcance completado'], answerIndex: 0, explanation: 'Transferir = analizar cobertura efectiva y costo asociado.', domain: 'Respuestas' },
+      { id: 'simq25', prompt: 'Qué práctica evita “listas infinitas” y centra el análisis en lo material?', options: ['Categorización RBS','Definir criterios y umbrales claros','Reuniones más largas','Añadir más participantes'], answerIndex: 1, explanation: 'Criterios/umbrales evitan dispersión y enfocan en lo relevante.', domain: 'Planificación' },
     ],
   },
   modules: [
+    // MÓDULO 1 (ya existente)
     {
       id: 'm1',
       title: 'Fundamentos y marco de referencia',
       lessons: [
-        {
-          id: 'm1l1',
-          title: 'Conceptos clave y terminología',
-          content: 'Diferencia entre riesgo y issue, amenazas vs oportunidades, apetito y tolerancia al riesgo. Alineado a estándar PMI y buenas prácticas organizacionales.',
-        },
-        {
-          id: 'm1l2',
-          title: 'Procesos de gestión de riesgos',
-          content: 'Planificar, Identificar, Analizar (cualitativo y cuantitativo), Planificar respuestas, Implementar, y Monitorear/Controlar.',
-        },
+        { id: 'm1l1', title: 'Conceptos clave y terminología', content: 'Diferencia entre riesgo y issue; amenazas vs oportunidades; apetito, tolerancia y umbrales.' },
+        { id: 'm1l2', title: 'Procesos de gestión de riesgos', content: 'Planificar, Identificar, Analizar (cuali/cuanti), Planificar respuestas, Implementar, Monitorear y Controlar.' },
       ],
       activities: [
-        {
-          id: 'm1a1',
-          title: 'Mapa conceptual de riesgos',
-          brief: 'Construye un mapa conceptual que relacione apetito, umbrales, categorías (RBS) y procesos. Describe 3 ejemplos de tu contexto.',
-          placeholder: 'Describe tu mapa conceptual o pega el enlace a Miro/Mural. Agrega 3 ejemplos reales…',
-        },
+        { id: 'm1a1', title: 'Mapa conceptual de riesgos', brief: 'Relaciona apetito, umbrales, RBS y procesos. Describe 3 ejemplos de tu contexto.', placeholder: 'Describe tu mapa o pega enlace a Miro/Mural…' },
       ],
       quizzes: [
         {
-          id: 'm1q1',
-          title: 'Mini‑examen Módulo 1 (10 preguntas)',
+          id: 'm1q1', title: 'Mini-examen Módulo 1 (6 preguntas)',
           questions: [
-            {
-              id: 'm1q1_1',
-              prompt: '¿Qué diferencia principal hay entre apetito y tolerancia al riesgo?',
-              options: [
-                'El apetito es el riesgo máximo permitido; la tolerancia es la preferencia por la incertidumbre',
-                'El apetito es la preferencia general; la tolerancia define rangos aceptables medibles',
-                'Son sinónimos',
-                'El apetito aplica a amenazas y la tolerancia solo a oportunidades',
-              ],
-              answerIndex: 1,
-              explanation: 'Apetito = preferencia nivel macro; Tolerancia = límites/rangos aceptables a nivel operativo.',
-              domain: 'Fundamentos',
-            },
-            {
-              id: 'm1q1_2',
-              prompt: 'Selecciona el mejor ejemplo de riesgo (no issue):',
-              options: [
-                'El proveedor ya entregó con 2 semanas de retraso',
-                'Podría faltar un ingeniero clave durante pruebas críticas',
-                'Se rechazó la factura de mayo',
-                'El servidor de QA está caído ahora',
-              ],
-              answerIndex: 1,
-              explanation: 'Un riesgo es un evento incierto que, si ocurre, impacta objetivos. Los otros son issues actuales.',
-              domain: 'Fundamentos',
-            },
+            { id: 'm1q1_1', prompt: '¿Qué diferencia principal hay entre apetito y tolerancia al riesgo?', options: ['Apetito = máximo permitido; Tolerancia = preferencia','Apetito = preferencia general; Tolerancia = rangos medibles','Son sinónimos','Apetito solo a amenazas'], answerIndex: 1, explanation: 'Apetito (macro) vs Tolerancia (límites operativos).', domain: 'Fundamentos' },
+            { id: 'm1q1_2', prompt: 'Selecciona el mejor ejemplo de riesgo (no issue):', options: ['Retraso ya ocurrido','Podría faltar un ingeniero clave','Factura rechazada','Servidor caído ahora'], answerIndex: 1, explanation: 'Riesgo = evento incierto futuro.', domain: 'Fundamentos' },
+            { id: 'm1q1_3', prompt: 'Qué artefacto define la estrategia general de gestión de riesgos?', options: ['Acta','Plan de riesgos','Registro de interesados','Matriz RACI'], answerIndex: 1, explanation: 'El plan de riesgos define enfoque, roles y reporting.', domain: 'Planificación' },
+            { id: 'm1q1_4', prompt: 'Qué significa oportunidad en gestión de riesgos?', options: ['Evento incierto con efecto positivo','Evento seguro con efecto neutro','Costo hundido','Evento fuera de alcance'], answerIndex: 0, explanation: 'Oportunidad = impacto positivo si ocurre.', domain: 'Fundamentos' },
+            { id: 'm1q1_5', prompt: 'El apetito de riesgo lo define…', options: ['El equipo de proyecto','La alta dirección/Patrocinador','El proveedor','PMO obligatoriamente'], answerIndex: 1, explanation: 'Se establece a nivel organizacional/patrocinio.', domain: 'Gobernanza' },
+            { id: 'm1q1_6', prompt: 'Cuál NO es un beneficio del registro de riesgos?', options: ['Trazabilidad de decisiones','Evitar todos los riesgos','Responsables claros','Estado y próximos pasos'], answerIndex: 1, explanation: 'No se puede “evitar todos los riesgos”.', domain: 'Registro' },
           ],
         },
       ],
     },
+    // MÓDULO 2 (ya existente)
     {
       id: 'm2',
       title: 'Plan de gestión de riesgos',
       lessons: [
-        {
-          id: 'm2l1',
-          title: 'Componentes del plan',
-          content: 'Roles, categorías (RBS), metodologías, criterios de prob‑impacto, formatos, umbrales y reporting.',
-        },
+        { id: 'm2l1', title: 'Componentes del plan', content: 'Roles, RBS, metodologías, criterios prob‑impacto, formatos, umbrales y reporting.' },
+        { id: 'm2l2', title: 'Gobernanza y responsabilidades', content: 'Propietarios de riesgo, comité de riesgos, escalamiento y auditoría.' },
       ],
       activities: [
-        {
-          id: 'm2a1',
-          title: 'Esbozo de plan de riesgos',
-          brief: 'Redacta un plan breve para un proyecto real (máx. 1 página) con roles, criterios y umbrales.',
-          placeholder: 'Escribe tu esbozo aquí…',
-        },
+        { id: 'm2a1', title: 'Esbozo de plan de riesgos', brief: 'Redacta 1 página con roles, criterios y umbrales para un proyecto real.', placeholder: 'Escribe tu esbozo aquí…' },
       ],
       quizzes: [
-        {
-          id: 'm2q1',
-          title: 'Mini‑examen Módulo 2',
-          questions: [
-            {
-              id: 'm2q1_1',
-              prompt: '¿Qué artefacto organiza categorías de riesgo por áreas (p. ej., técnico, externo, organizacional)?',
-              options: ['RACI', 'RBS', 'OBS', 'PBS'],
-              answerIndex: 1,
-              explanation: 'RBS = Risk Breakdown Structure.',
-              domain: 'Planificación',
-            },
-          ],
-        },
+        { id: 'm2q1', title: 'Mini-examen Módulo 2 (5 preguntas)', questions: [
+          { id: 'm2q1_1', prompt: '¿Qué artefacto organiza categorías de riesgo por áreas?', options: ['RACI','RBS','OBS','PBS'], answerIndex: 1, explanation: 'RBS = Risk Breakdown Structure.', domain: 'Planificación' },
+          { id: 'm2q1_2', prompt: 'Qué sección del plan define cuándo reportar y a quién?', options: ['Metodología','Reporting','Criterios','Cronograma'], answerIndex: 1, explanation: 'El plan especifica formatos y frecuencia de reporting.', domain: 'Planificación' },
+          { id: 'm2q1_3', prompt: 'Los umbrales sirven para…', options: ['Estimaciones de costo','Disparar acciones al superarse límites','Definir EDT','Definir roles contables'], answerIndex: 1, explanation: 'Umbrales disparan acciones.', domain: 'Planificación' },
+          { id: 'm2q1_4', prompt: 'Quién aprueba el plan de riesgos típicamente?', options: ['Patrocinador/Steering','Proveedor','Cualquier miembro','Oficial de cumplimiento exclusivamente'], answerIndex: 0, explanation: 'Alta dirección/steering aprueba planes clave.', domain: 'Gobernanza' },
+          { id: 'm2q1_5', prompt: 'Qué relación tienen apetito y umbrales?', options: ['Independientes','Umbrales operacionalizan el apetito','Umbrales sustituyen apetito','No se relacionan'], answerIndex: 1, explanation: 'Umbrales traducen apetito a límites medibles.', domain: 'Planificación' },
+        ]},
+      ],
+    },
+    // MÓDULO 3 – Identificación de riesgos
+    {
+      id: 'm3',
+      title: 'Identificación de riesgos',
+      lessons: [
+        { id: 'm3l1', title: 'Técnicas y fuentes', content: 'Delphi, brainstorming, checklist, entrevistas, análisis de supuestos/ restricciones, lecciones aprendidas.' },
+        { id: 'm3l2', title: 'Registro de riesgos (atributos)', content: 'Descripción, causa, efecto, categoría RBS, propietario propuesto, disparadores y supuestos relacionados.' },
+      ],
+      activities: [
+        { id: 'm3a1', title: 'Ejercicio de identificación', brief: 'Identifica 8 riesgos (5 amenazas, 3 oportunidades) para un caso ERP y clasifícalos en RBS.', placeholder: 'Lista y clasifica tus riesgos…' },
+      ],
+      quizzes: [
+        { id: 'm3q1', title: 'Mini-examen Módulo 3 (6 preguntas)', questions: [
+          { id: 'm3q1_1', prompt: 'Mejor técnica para evitar sesgo de líder dominante:', options: ['Brainstorming abierto','Delphi','Entrevistas públicas','Tormenta de ideas con votación a mano alzada'], answerIndex: 1, explanation: 'Delphi garantiza anonimato y consenso.', domain: 'Identificación' },
+          { id: 'm3q1_2', prompt: 'Cuál es una ENTRADA de Identificar Riesgos?', options: ['Plan de riesgos','Registro de riesgos','EMV','Curva S'], answerIndex: 0, explanation: 'Plan de riesgos guía la identificación.', domain: 'Entradas' },
+          { id: 'm3q1_3', prompt: 'Elemento que NO es típico del registro en esta fase:', options: ['Causa','Impacto monetario exacto','Categoría RBS','Disparadores'], answerIndex: 1, explanation: 'El impacto monetario exacto es del cuantitativo.', domain: 'Registro' },
+          { id: 'm3q1_4', prompt: 'Qué técnica ayuda a descubrir “puntos ciegos” regulatorios?', options: ['Revisión normativa','Mapa de calor','PERT','Poker planning'], answerIndex: 0, explanation: 'La base regulatoria es crítica para cumplimiento.', domain: 'Identificación' },
+          { id: 'm3q1_5', prompt: 'Riesgo vs causa:', options: ['Son lo mismo','La causa antecede al riesgo','La causa es la respuesta','La causa es el impacto'], answerIndex: 1, explanation: 'Causa → Riesgo → Impacto.', domain: 'Fundamentos' },
+          { id: 'm3q1_6', prompt: 'Qué documento histórico ayuda más en identificación?', options: ['Lecciones aprendidas','Presupuesto vigente','Plan de adquisiciones','WBS sólo'], answerIndex: 0, explanation: 'Lecciones aprendidas evitan repetir errores.', domain: 'Lecciones' },
+        ]},
+      ],
+    },
+    // MÓDULO 4 – Análisis cualitativo y cuantitativo
+    {
+      id: 'm4',
+      title: 'Análisis cualitativo y cuantitativo',
+      lessons: [
+        { id: 'm4l1', title: 'Cualitativo (prob‑impacto, urgencia)', content: 'Criterios normalizados, escalas, sesgos, acuerdos de priorización.' },
+        { id: 'm4l2', title: 'Cuantitativo (EMV, Monte Carlo)', content: 'Distribuciones, correlación, sensibilidad, árbol de decisiones.' },
+      ],
+      activities: [
+        { id: 'm4a1', title: 'Priorización cualitativa', brief: 'Construye una matriz prob‑impacto para 12 riesgos identificados y prioriza el Top 5.', placeholder: 'Pega tu matriz o describe el Top 5 con razones…' },
+      ],
+      quizzes: [
+        { id: 'm4q1', title: 'Mini-examen Módulo 4 (6 preguntas)', questions: [
+          { id: 'm4q1_1', prompt: 'Una salida del análisis cualitativo es:', options: ['Lista priorizada de riesgos','EMV por alternativa','Reserva de gestión','Ruta crítica'], answerIndex: 0, explanation: 'Resultado típico: ranking priorizado.', domain: 'Cualitativo' },
+          { id: 'm4q1_2', prompt: 'Qué distribución suele usarse en PERT?', options: ['Triangular','Normal','Beta','Poisson'], answerIndex: 2, explanation: 'PERT emplea beta (o aproximación).', domain: 'Cuantitativo' },
+          { id: 'm4q1_3', prompt: 'El EMV se calcula como:', options: ['Impacto × Costo fijo','Probabilidad × Impacto','Impacto / Probabilidad','Probabilidad + Impacto'], answerIndex: 1, explanation: 'EMV = p × i.', domain: 'Cuantitativo' },
+          { id: 'm4q1_4', prompt: 'Si hay correlación alta entre riesgos, la simulación debe:', options: ['Ignorarla','Asumir independencia','Modelarla explícitamente','Reducir iteraciones'], answerIndex: 2, explanation: 'La correlación cambia la dispersión de resultados.', domain: 'Cuantitativo' },
+          { id: 'm4q1_5', prompt: 'Qué sesgo puede inflar impactos estimados?', options: ['Anclaje','Optimismo','Disponibilidad','Todos'], answerIndex: 3, explanation: 'Varios sesgos afectan estimaciones.', domain: 'Psicología del riesgo' },
+          { id: 'm4q1_6', prompt: 'La matriz de calor sirve para:', options: ['Reporte ejecutivo visual','Calcular EMV','Definir EDT','Asignar contratos'], answerIndex: 0, explanation: 'Facilita comunicación y foco.', domain: 'Cualitativo' },
+        ]},
+      ],
+    },
+    // MÓDULO 5 – Planificación e implementación de respuestas
+    {
+      id: 'm5',
+      title: 'Planificación e implementación de respuestas',
+      lessons: [
+        { id: 'm5l1', title: 'Estrategias para amenazas y oportunidades', content: 'Evitar, mitigar, transferir, aceptar; Explorar, compartir, mejorar, aceptar.' },
+        { id: 'm5l2', title: 'Reservas, triggers y planes de contingencia', content: 'Diferencia contingencia vs gestión, criterios de liberación.' },
+      ],
+      activities: [
+        { id: 'm5a1', title: 'Diseño de plan de respuesta', brief: 'Para los 5 riesgos Top, define estrategia, responsable, trigger y costo estimado.', placeholder: 'Plan de respuesta por riesgo…' },
+      ],
+      quizzes: [
+        { id: 'm5q1', title: 'Mini-examen Módulo 5 (5 preguntas)', questions: [
+          { id: 'm5q1_1', prompt: 'Transferir una amenaza implica:', options: ['Eliminar su causa','Reducir su probabilidad','Mover el impacto a un tercero mediante contrato/seguro','Aceptarla sin acción'], answerIndex: 2, explanation: 'Transferencia contractual/seguro.', domain: 'Respuestas' },
+          { id: 'm5q1_2', prompt: 'Explotar una oportunidad busca:', options: ['Aumentar impacto negativo','Maximizar probabilidad de beneficio','Reducir variabilidad','Documentar sin actuar'], answerIndex: 1, explanation: 'Explotar = asegurar que ocurra.', domain: 'Respuestas' },
+          { id: 'm5q1_3', prompt: 'Las reservas de gestión cubren:', options: ['Riesgos identificados','Riesgos desconocidos','Costos fijos','Gastos operativos'], answerIndex: 1, explanation: 'Gestión = unknown unknowns.', domain: 'Reservas' },
+          { id: 'm5q1_4', prompt: 'Qué debes definir para poder activar una contingencia?', options: ['KPI de ventas','Trigger/condición','Ruta crítica','SLA del proveedor'], answerIndex: 1, explanation: 'Trigger define cuándo activar.', domain: 'Planificación' },
+          { id: 'm5q1_5', prompt: 'Quién ejecuta la respuesta?', options: ['Propietario del riesgo','PMO','Patrocinador','QA'], answerIndex: 0, explanation: 'Owner responsable de ejecutar/coordinar.', domain: 'Gobernanza' },
+        ]},
+      ],
+    },
+    // MÓDULO 6 – Monitoreo, control y mejora
+    {
+      id: 'm6',
+      title: 'Monitoreo, control y mejora',
+      lessons: [
+        { id: 'm6l1', title: 'Seguimiento de respuestas y KRIs', content: 'Indicadores, dashboards, auditorías de riesgo, revisiones periódicas.' },
+        { id: 'm6l2', title: 'Lecciones aprendidas y mejora continua', content: 'Captura sistemática, retroalimentación en el plan y cultura de riesgo.' },
+      ],
+      activities: [
+        { id: 'm6a1', title: 'Simulación de comité de riesgos', brief: 'Redacta minuta con decisiones de escalamiento, cierre y actualización de reservas.', placeholder: 'Minuta de comité…' },
+      ],
+      quizzes: [
+        { id: 'm6q1', title: 'Mini-examen Módulo 6 (5 preguntas)', questions: [
+          { id: 'm6q1_1', prompt: 'Indicador más adecuado para anticipar materialización:', options: ['KRI','KPI de ventas','ROI','EVA'], answerIndex: 0, explanation: 'KRIs monitorean exposición.', domain: 'Monitoreo' },
+          { id: 'm6q1_2', prompt: 'Qué hacer con un riesgo que ya ocurrió?', options: ['Mantener como riesgo','Convertirlo en issue y gestionar','Eliminar del registro sin más','Ignorarlo'], answerIndex: 1, explanation: 'Pasa a issue/gestión de incidentes.', domain: 'Control' },
+          { id: 'm6q1_3', prompt: 'Qué documento debe actualizarse tras ejecutar una respuesta?', options: ['Diccionario EDT','Registro de riesgos','Acta constitución','Contrato marco'], answerIndex: 1, explanation: 'Registro refleja estado/residual.', domain: 'Registro' },
+          { id: 'm6q1_4', prompt: 'Cuándo conviene cerrar un riesgo?', options: ['Nunca','Cuando prob y/o impacto son insignificantes o ya no aplican','Solo al final del proyecto','Cuando el patrocinador lo pida'], answerIndex: 1, explanation: 'Se cierra si pierde relevancia o ya no puede ocurrir.', domain: 'Control' },
+          { id: 'm6q1_5', prompt: 'Qué práctica asegura aprendizaje organizacional?', options: ['No documentar para ahorrar tiempo','Lecciones aprendidas integradas a procesos','Hacer reuniones ad hoc sin registros','Delegar todo a QA'], answerIndex: 1, explanation: 'Lecciones integradas y reutilizadas.', domain: 'Mejora continua' },
+        ]},
       ],
     },
   ],
-}
+};
 
-const STORAGE_KEY = 'risk-course-progress-v1'
+// ———————————— Utilidades de almacenamiento ————————————
+const STORAGE_KEY = "risk-course-progress-v1";
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch (e) { return null }
-}
-function saveState(state) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch (e) {}
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
-function Badge({ children }) {
-  return <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">{children}</span>
+function saveState(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
 }
+
+// ———————————— Componentes de UI ————————————
+function Badge({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
+      {children}
+    </span>
+  );
+}
+
 function Stat({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-3">
       <Icon className="h-5 w-5" />
       <div>
-        <div className="text-sm text-gray-500">{label}</div>
+        <div className="text-sm text-muted-foreground">{label}</div>
         <div className="text-lg font-semibold">{value}</div>
       </div>
     </div>
-  )
+  );
 }
 
+// ———————————— Quiz Engine ————————————
 function Quiz({ quiz, onFinish, savedAnswers = {} }) {
-  const [answers, setAnswers] = useState({ ...savedAnswers })
-  const [submitted, setSubmitted] = useState(false)
+  const [answers, setAnswers] = useState(() => ({ ...savedAnswers }));
+  const [submitted, setSubmitted] = useState(false);
 
   const score = useMemo(() => {
-    let s = 0
-    quiz.questions.forEach((q) => { if (answers[q.id] === q.answerIndex) s += 1 })
-    return s
-  }, [answers, quiz.questions])
+    let s = 0;
+    quiz.questions.forEach((q) => {
+      if (answers[q.id] === q.answerIndex) s += 1;
+    });
+    return s;
+  }, [answers, quiz.questions]);
 
   return (
     <Card className="mt-4">
@@ -204,81 +253,106 @@ function Quiz({ quiz, onFinish, savedAnswers = {} }) {
       <CardContent className="space-y-6">
         {quiz.questions.map((q, idx) => (
           <div key={q.id} className="rounded-2xl border p-4">
-            <div className="mb-2 text-sm text-gray-500">Pregunta {idx + 1} de {quiz.questions.length}</div>
+            <div className="mb-2 text-sm text-muted-foreground">Pregunta {idx + 1} de {quiz.questions.length}</div>
             <div className="mb-3 font-medium">{q.prompt}</div>
             <div className="space-y-2">
               {q.options.map((opt, i) => {
-                const isSelected = answers[q.id] === i
-                const isCorrect = q.answerIndex === i
-                const showColors = submitted
-                const base = 'w-full text-left rounded-xl border p-3'
+                const isSelected = answers[q.id] === i;
+                const isCorrect = q.answerIndex === i;
+                const showColors = submitted;
+                const base = "w-full text-left rounded-xl border p-3";
                 const color = showColors
-                  ? isCorrect ? 'border-emerald-500' : (isSelected ? 'border-rose-500' : '')
-                  : (isSelected ? 'border-black' : '')
+                  ? isCorrect
+                    ? "border-emerald-500"
+                    : isSelected
+                      ? "border-rose-500"
+                      : ""
+                  : isSelected
+                    ? "border-primary"
+                    : "";
                 return (
-                  <button key={i} className={`${base} ${color}`} onClick={() => !submitted && setAnswers({ ...answers, [q.id]: i })}>
+                  <button
+                    key={i}
+                    className={`${base} ${color}`}
+                    onClick={() => !submitted && setAnswers({ ...answers, [q.id]: i })}
+                  >
                     <div className="flex items-center justify-between">
                       <span>{opt}</span>
                       {submitted && isCorrect && <CheckCircle2 className="h-5 w-5"/>}
                       {submitted && !isCorrect && isSelected && <XCircle className="h-5 w-5"/>}
                     </div>
                   </button>
-                )
+                );
               })}
             </div>
             {submitted && (
-              <div className="mt-3 text-sm text-gray-600">
+              <div className="mt-3 text-sm text-muted-foreground">
                 <strong>Explicación: </strong>{q.explanation}
-                {q.domain && (<div className="mt-1"><Badge>{q.domain}</Badge></div>)}
+                {q.domain && (
+                  <div className="mt-1"><Badge>{q.domain}</Badge></div>
+                )}
               </div>
             )}
           </div>
         ))}
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {submitted ? <>Puntaje: <strong>{score}</strong> / {quiz.questions.length}</> : <>Selecciona tus respuestas y envía para ver resultados.</>}
+          <div className="text-sm text-muted-foreground">
+            {submitted ? (
+              <>Puntaje: <strong>{score}</strong> / {quiz.questions.length}</>
+            ) : (
+              <>Selecciona tus respuestas y envía para ver resultados.</>
+            )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => {}}><RefreshCw className="mr-2 h-4 w-4"/> Reiniciar</Button>
+            <Button variant="outline" onClick={() => { setAnswers({}); setSubmitted(false); }}>
+              <RefreshCw className="mr-2 h-4 w-4"/> Reiniciar
+            </Button>
             {!submitted ? (
-              <Button onClick={() => { setSubmitted(true); onFinish?.(answers, score) }}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
+              <Button onClick={() => { setSubmitted(true); onFinish?.(answers, score); }}>
+                <CheckCircle2 className="mr-2 h-4 w-4"/> Enviar
+              </Button>
             ) : (
-              <Button onClick={() => onFinish?.(answers, score)}><Play className="mr-2 h-4 w-4"/> Continuar</Button>
+              <Button onClick={() => onFinish?.(answers, score)}>
+                <Play className="mr-2 h-4 w-4"/> Continuar
+              </Button>
             )}
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
+// ———————————— Simulador con temporizador ————————————
 function Simulator({ config, onFinish, saved = {} }) {
-  const [answers, setAnswers] = useState({ ...(saved.answers || {}) })
-  const [timeLeft, setTimeLeft] = useState(saved.timeLeft ?? config.durationMinutes * 60)
-  const [submitted, setSubmitted] = useState(false)
+  const [answers, setAnswers] = useState(() => ({ ...(saved.answers || {}) }));
+  const [timeLeft, setTimeLeft] = useState(() => saved.timeLeft ?? config.durationMinutes * 60);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (submitted) return
-    const t = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000)
-    return () => clearInterval(t)
-  }, [submitted])
+    if (submitted) return;
+    const t = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [submitted]);
 
   useEffect(() => {
     if (timeLeft === 0 && !submitted) {
-      setSubmitted(true)
-      onFinish?.(answers)
+      setSubmitted(true);
+      onFinish?.(answers);
     }
-  }, [timeLeft, submitted, onFinish, answers])
+  }, [timeLeft, submitted, onFinish, answers]);
 
   const score = useMemo(() => {
-    let s = 0
-    config.questions.forEach((q) => { if (answers[q.id] === q.answerIndex) s += 1 })
-    return s
-  }, [answers, config.questions])
+    let s = 0;
+    config.questions.forEach((q) => {
+      if (answers[q.id] === q.answerIndex) s += 1;
+    });
+    return s;
+  }, [answers, config.questions]);
 
-  const mm = String(Math.floor(timeLeft / 60)).padStart(2, '0')
-  const ss = String(timeLeft % 60).padStart(2, '0')
+  const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const ss = String(timeLeft % 60).padStart(2, "0");
 
   return (
     <Card className="mt-4">
@@ -287,20 +361,20 @@ function Simulator({ config, onFinish, saved = {} }) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between rounded-xl border p-3">
-          <div className="text-sm text-gray-500">Duración</div>
+          <div className="text-sm text-muted-foreground">Duración</div>
           <div className="flex items-center gap-3 text-lg font-semibold"><Clock className="h-5 w-5"/> {mm}:{ss}</div>
         </div>
 
         {config.questions.map((q, idx) => (
           <div key={q.id} className="rounded-2xl border p-4">
-            <div className="mb-2 text-sm text-gray-500">Pregunta {idx + 1} de {config.questions.length}</div>
+            <div className="mb-2 text-sm text-muted-foreground">Pregunta {idx + 1} de {config.questions.length}</div>
             <div className="mb-3 font-medium">{q.prompt}</div>
             <div className="grid gap-2 md:grid-cols-2">
               {q.options.map((opt, i) => (
                 <button
                   key={i}
                   disabled={submitted}
-                  className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? 'border-black' : ''}`}
+                  className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? "border-primary" : ""}`}
                   onClick={() => setAnswers({ ...answers, [q.id]: i })}
                 >
                   {opt}
@@ -311,85 +385,106 @@ function Simulator({ config, onFinish, saved = {} }) {
         ))}
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {submitted ? <>Puntaje: <strong>{score}</strong> / {config.questions.length}</> : <>Selecciona tus respuestas. El examen se envía al agotar el tiempo o al presionar "Enviar".</>}
+          <div className="text-sm text-muted-foreground">
+            {submitted ? (
+              <>Puntaje: <strong>{score}</strong> / {config.questions.length}</>
+            ) : (
+              <>Selecciona tus respuestas. El examen se envía al agotar el tiempo o al presionar "Enviar".</>
+            )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => {}}><RefreshCw className="mr-2 h-4 w-4"/> Reiniciar</Button>
-            <Button onClick={() => { setSubmitted(true); onFinish?.(answers) }}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
+            <Button variant="outline" onClick={() => { setAnswers({}); }}>
+              <RefreshCw className="mr-2 h-4 w-4"/> Reiniciar
+            </Button>
+            <Button onClick={() => { setSubmitted(true); onFinish?.(answers); }}>
+              <CheckCircle2 className="mr-2 h-4 w-4"/> Enviar
+            </Button>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-function Activity({ activity, savedText = '', onSave }) {
-  const [text, setText] = useState(savedText)
+// ———————————— Actividad abierta ————————————
+function Activity({ activity, savedText = "", onSave }) {
+  const [text, setText] = useState(savedText);
   return (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/> {activity.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">{activity.brief}</p>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={activity.placeholder} className="min-h-[160px]" />
+        <p className="text-sm text-muted-foreground">{activity.brief}</p>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={activity.placeholder}
+          className="min-h-[160px]"
+        />
         <div className="flex gap-2">
           <Button onClick={() => onSave?.(text)}><CheckCircle2 className="mr-2 h-4 w-4"/> Guardar</Button>
-          <Button variant="outline" onClick={() => setText('')}>Limpiar</Button>
+          <Button variant="outline" onClick={() => setText("")}>Limpiar</Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
+// ———————————— App principal ————————————
 export default function RiskCourseApp() {
   const [state, setState] = useState(() =>
     loadState() || {
       currentModuleId: COURSE.modules[0].id,
-      answersByQuiz: {},
-      activityTexts: {},
+      answersByQuiz: {}, // { quizId: { [questionId]: answerIndex } }
+      activityTexts: {}, // { activityId: string }
       simulator: { answers: {}, runs: [], timeLeft: null },
-      profile: { name: '', email: '' },
+      profile: { name: "", email: "" },
     }
-  )
+  );
 
-  useEffect(() => saveState(state), [state])
+  useEffect(() => saveState(state), [state]);
 
   const currentModule = useMemo(
     () => COURSE.modules.find((m) => m.id === state.currentModuleId) || COURSE.modules[0],
     [state.currentModuleId]
-  )
+  );
 
   const progress = useMemo(() => {
     const totalQuestions = COURSE.modules.reduce(
       (acc, m) => acc + m.quizzes.reduce((a, q) => a + q.questions.length, 0),
       0
-    )
-    const answered = Object.values(state.answersByQuiz).reduce((acc, qa) => acc + Object.keys(qa || {}).length, 0)
-    const pct = totalQuestions ? Math.round((answered / totalQuestions) * 100) : 0
-    return { totalQuestions, answered, pct }
-  }, [state.answersByQuiz])
+    );
+    const answered = Object.values(state.answersByQuiz).reduce((acc, qa) => acc + Object.keys(qa || {}).length, 0);
+    const pct = totalQuestions ? Math.round((answered / totalQuestions) * 100) : 0;
+    return { totalQuestions, answered, pct };
+  }, [state.answersByQuiz]);
 
-  const totalSimQuestions = COURSE.simulator.questions.length
-  const runs = state.simulator?.runs ?? [];
-  const bestSimScore = runs.length ? Math.max(...runs.map(r => r.score ?? 0)) : 0;
+  const totalSimQuestions = COURSE.simulator.questions.length;
+  const bestSimScore = Math.max(0, ...state.simulator.runs.map((r) => r.score || 0));
 
+  // Export / Import progreso
   function exportJSON() {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'curso-riesgos-progreso.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "curso-riesgos-progreso.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
+
   function importJSON(file) {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
-      try { const obj = JSON.parse(String(e.target?.result || '')); setState(obj) } catch { alert('Archivo inválido') }
-    }
-    reader.readAsText(file)
+      try {
+        const obj = JSON.parse(String(e.target?.result || ""));
+        setState(obj);
+      } catch (err) {
+        alert("Archivo inválido");
+      }
+    };
+    reader.readAsText(file);
   }
 
   return (
@@ -400,12 +495,12 @@ export default function RiskCourseApp() {
             <LayoutDashboard className="h-6 w-6" />
             <div>
               <h1 className="text-lg font-semibold">{COURSE.title}</h1>
-              <p className="text-xs text-gray-500">{COURSE.subtitle}</p>
+              <p className="text-xs text-muted-foreground">{COURSE.subtitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={exportJSON}><Download className="mr-2 h-4 w-4"/> Exportar avance</Button>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2 text-sm">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
               <Upload className="h-4 w-4"/> Importar
               <input type="file" accept="application/json" className="hidden" onChange={(e) => e.target.files?.[0] && importJSON(e.target.files[0])} />
             </label>
@@ -414,6 +509,7 @@ export default function RiskCourseApp() {
       </header>
 
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[280px,1fr]">
+        {/* Sidebar */}
         <aside className="space-y-4">
           <Card>
             <CardHeader>
@@ -421,23 +517,23 @@ export default function RiskCourseApp() {
             </CardHeader>
             <CardContent className="space-y-2">
               {COURSE.modules.map((m, idx) => {
-                const modQuestions = m.quizzes.reduce((a, q) => a + q.questions.length, 0)
-                const answeredInMod = m.quizzes.reduce((a, q) => a + Object.keys(state.answersByQuiz[q.id] || {}).length, 0)
-                const pct = modQuestions ? Math.round((answeredInMod / modQuestions) * 100) : 0
-                const active = state.currentModuleId === m.id
+                const modQuestions = m.quizzes.reduce((a, q) => a + q.questions.length, 0);
+                const answeredInMod = m.quizzes.reduce((a, q) => a + Object.keys(state.answersByQuiz[q.id] || {}).length, 0);
+                const pct = modQuestions ? Math.round((answeredInMod / modQuestions) * 100) : 0;
+                const active = state.currentModuleId === m.id;
                 return (
                   <button
                     key={m.id}
-                    className={`w-full rounded-xl border p-3 text-left ${active ? 'border-black' : ''}`}
+                    className={`w-full rounded-xl border p-3 text-left ${active ? "border-primary" : ""}`}
                     onClick={() => setState({ ...state, currentModuleId: m.id })}
                   >
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{idx + 1}. {m.title}</div>
-                      <span className="text-xs text-gray-500">{pct}%</span>
+                      <span className="text-xs text-muted-foreground">{pct}%</span>
                     </div>
                     <Progress value={pct} className="mt-2"/>
                   </button>
-                )
+                );
               })}
             </CardContent>
           </Card>
@@ -447,12 +543,20 @@ export default function RiskCourseApp() {
               <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5"/> Tu perfil</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Input placeholder="Tu nombre" value={state.profile.name} onChange={(e) => setState({ ...state, profile: { ...state.profile, name: e.target.value } })} />
-              <Input placeholder="Tu email" value={state.profile.email} onChange={(e) => setState({ ...state, profile: { ...state.profile, email: e.target.value } })} />
+              <Input
+                placeholder="Tu nombre"
+                value={state.profile.name}
+                onChange={(e) => setState({ ...state, profile: { ...state.profile, name: e.target.value } })}
+              />
+              <Input
+                placeholder="Tu email"
+                value={state.profile.email}
+                onChange={(e) => setState({ ...state, profile: { ...state.profile, email: e.target.value } })}
+              />
               <div className="rounded-xl border p-3 text-sm">
                 <div className="mb-1 font-medium">Progreso general</div>
                 <Progress value={progress.pct}/>
-                <div className="mt-2 text-xs text-gray-500">{progress.answered}/{progress.totalQuestions} preguntas respondidas</div>
+                <div className="mt-2 text-xs text-muted-foreground">{progress.answered}/{progress.totalQuestions} preguntas respondidas</div>
               </div>
             </CardContent>
           </Card>
@@ -464,11 +568,12 @@ export default function RiskCourseApp() {
             <CardContent className="space-y-2 text-sm">
               <Stat icon={Clock} label="Duración" value={`${COURSE.simulator.durationMinutes} min`}/>
               <Stat icon={ShieldAlert} label="Preguntas" value={totalSimQuestions}/>
-              <Stat icon={CheckCircle2} label="Mejor puntaje" value={`—/${totalSimQuestions}`}/>
+              <Stat icon={CheckCircle2} label="Mejor puntaje" value={`${bestSimScore}/${totalSimQuestions}`}/>
             </CardContent>
           </Card>
         </aside>
 
+        {/* Contenido */}
         <section>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             <Card>
@@ -476,23 +581,26 @@ export default function RiskCourseApp() {
                 <CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5"/> {currentModule.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Lecciones */}
                 {currentModule.lessons?.map((l) => (
                   <div key={l.id} className="rounded-2xl border p-4">
-                    <div className="mb-1 text-sm text-gray-500">Lección</div>
+                    <div className="mb-1 text-sm text-muted-foreground">Lección</div>
                     <div className="text-base font-medium">{l.title}</div>
-                    <p className="mt-2 text-sm text-gray-600">{l.content}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{l.content}</p>
                   </div>
                 ))}
 
+                {/* Actividades */}
                 {currentModule.activities?.map((a) => (
                   <Activity
                     key={a.id}
                     activity={a}
-                    savedText={state.activityTexts[a.id] || ''}
+                    savedText={state.activityTexts[a.id] || ""}
                     onSave={(text) => setState({ ...state, activityTexts: { ...state.activityTexts, [a.id]: text } })}
                   />
                 ))}
 
+                {/* Quizzes */}
                 {currentModule.quizzes?.map((q) => (
                   <Quiz
                     key={q.id}
@@ -505,19 +613,20 @@ export default function RiskCourseApp() {
                   />
                 ))}
 
+                {/* Simulador */}
                 <div className="rounded-2xl border p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="text-base font-medium flex items-center gap-2"><Clock className="h-5 w-5"/> Examen final simulado</div>
                     <Badge>{COURSE.simulator.questions.length} preguntas</Badge>
                   </div>
-                  <p className="text-sm text-gray-600">Temporizador y retroalimentación. Puedes reiniciar y repetir para mejorar tu puntaje.</p>
+                  <p className="text-sm text-muted-foreground">Temporizador y retroalimentación. Puedes reiniciar y repetir para mejorar tu puntaje.</p>
                   <Simulator
                     config={COURSE.simulator}
                     saved={state.simulator}
                     onFinish={(answers) => {
-                      const score = COURSE.simulator.questions.reduce((s, q) => s + ((answers[q.id] ?? -1) === q.answerIndex ? 1 : 0), 0)
-                      const run = { date: new Date().toISOString(), score }
-                      setState({ ...state, simulator: { answers, runs: [...state.simulator.runs, run], timeLeft: null } })
+                      const score = COURSE.simulator.questions.reduce((s, q) => s + ((answers[q.id] ?? -1) === q.answerIndex ? 1 : 0), 0);
+                      const run = { date: new Date().toISOString(), score };
+                      setState({ ...state, simulator: { answers, runs: [...state.simulator.runs, run], timeLeft: null } });
                     }}
                   />
                 </div>
@@ -527,9 +636,10 @@ export default function RiskCourseApp() {
         </section>
       </main>
 
-      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-xs text-gray-500">
-        <div className="mt-2">© {new Date().getFullYear()} Curso de preparación en gestión de riesgos. Versión MVP.</div>
+      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-xs text-muted-foreground">
+        <div className="mt-2">© {new Date().getFullYear()} Curso de preparación en gestión de riesgos. Esta es una versión MVP extensible.</div>
       </footer>
     </div>
-  )
+  );
 }
+
