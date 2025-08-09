@@ -325,34 +325,87 @@ function Quiz({ quiz, onFinish, savedAnswers = {} }) {
 }
 
 // ———————————— Simulador con temporizador ————————————
+function ResultsCard({ result }) {
+  if (!result) return null;
+  const total = Object.values(result.byDomain).reduce((a, v) => a + v.total, 0);
+  const correct = Object.values(result.byDomain).reduce((a, v) => a + v.correct, 0);
+  const domains = Object.entries(result.byDomain).sort((a,b)=>a[0].localeCompare(b[0]));
+  return (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5"/> Resultado por dominio</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-sm text-gray-600">Aciertos: <strong>{correct}</strong> / {total}</div>
+        {domains.map(([dom, { correct, total }]) => {
+          const pct = total ? Math.round((correct/total)*100) : 0;
+          return (
+            <div key={dom} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{dom}</span>
+                <span className="text-gray-500">{correct}/{total} ({pct}%)</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-full bg-black" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+        {result.recommendation && (
+          <div className="rounded-xl border p-3 text-sm">
+            <div className="font-medium mb-1">Sugerencia de estudio</div>
+            <div className="text-gray-600">{result.recommendation}</div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function Simulator({ config, onFinish, saved = {} }) {
-  const [answers, setAnswers] = useState(() => ({ ...(saved.answers || {}) }));
-  const [timeLeft, setTimeLeft] = useState(() => saved.timeLeft ?? config.durationMinutes * 60);
-  const [submitted, setSubmitted] = useState(false);
+  const [answers, setAnswers] = useState({ ...(saved.answers || {}) })
+  const [timeLeft, setTimeLeft] = useState(saved.timeLeft ?? config.durationMinutes * 60)
+  const [submitted, setSubmitted] = useState(false)
+  const [result, setResult] = useState(saved.lastResult || null)
 
   useEffect(() => {
-    if (submitted) return;
-    const t = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(t);
-  }, [submitted]);
+    if (submitted) return
+    const t = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000)
+    return () => clearInterval(t)
+  }, [submitted])
 
   useEffect(() => {
     if (timeLeft === 0 && !submitted) {
-      setSubmitted(true);
-      onFinish?.(answers);
+      submitNow()
     }
-  }, [timeLeft, submitted, onFinish, answers]);
+  }, [timeLeft, submitted])
 
   const score = useMemo(() => {
-    let s = 0;
-    config.questions.forEach((q) => {
-      if (answers[q.id] === q.answerIndex) s += 1;
-    });
-    return s;
-  }, [answers, config.questions]);
+    let s = 0
+    config.questions.forEach((q) => { if (answers[q.id] === q.answerIndex) s += 1 })
+    return s
+  }, [answers, config.questions])
 
-  const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-  const ss = String(timeLeft % 60).padStart(2, "0");
+  const mm = String(Math.floor(timeLeft / 60)).padStart(2, '0')
+  const ss = String(timeLeft % 60).padStart(2, '0')
+
+  function submitNow(){
+    setSubmitted(true)
+    const byDomain = {}
+    for (const q of config.questions){
+      const dom = q.domain || 'General'
+      byDomain[dom] = byDomain[dom] || { correct:0, total:0 }
+      byDomain[dom].total += 1
+      if ((answers[q.id] ?? -1) === q.answerIndex) byDomain[dom].correct += 1
+    }
+    const worst = Object.entries(byDomain)
+      .map(([dom, d]) => ({ dom, pct: d.total? d.correct/d.total : 0 }))
+      .sort((a,b)=>a.pct-b.pct)[0]
+    const recommendation = worst ? `Refuerza el dominio "${worst.dom}" con las lecciones y mini‑exámenes de su módulo.` : ''
+    const payload = { byDomain, score }
+    setResult({ ...payload, recommendation })
+    onFinish?.(answers, payload)
+  }
 
   return (
     <Card className="mt-4">
@@ -361,20 +414,20 @@ function Simulator({ config, onFinish, saved = {} }) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between rounded-xl border p-3">
-          <div className="text-sm text-muted-foreground">Duración</div>
+          <div className="text-sm text-gray-500">Duración</div>
           <div className="flex items-center gap-3 text-lg font-semibold"><Clock className="h-5 w-5"/> {mm}:{ss}</div>
         </div>
 
         {config.questions.map((q, idx) => (
           <div key={q.id} className="rounded-2xl border p-4">
-            <div className="mb-2 text-sm text-muted-foreground">Pregunta {idx + 1} de {config.questions.length}</div>
+            <div className="mb-2 text-sm text-gray-500">Pregunta {idx + 1} de {config.questions.length}</div>
             <div className="mb-3 font-medium">{q.prompt}</div>
             <div className="grid gap-2 md:grid-cols-2">
               {q.options.map((opt, i) => (
                 <button
                   key={i}
                   disabled={submitted}
-                  className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? "border-primary" : ""}`}
+                  className={`text-left rounded-xl border p-3 ${answers[q.id] === i ? 'border-black' : ''}`}
                   onClick={() => setAnswers({ ...answers, [q.id]: i })}
                 >
                   {opt}
@@ -385,22 +438,16 @@ function Simulator({ config, onFinish, saved = {} }) {
         ))}
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {submitted ? (
-              <>Puntaje: <strong>{score}</strong> / {config.questions.length}</>
-            ) : (
-              <>Selecciona tus respuestas. El examen se envía al agotar el tiempo o al presionar "Enviar".</>
-            )}
+          <div className="text-sm text-gray-500">
+            {submitted ? <>Puntaje: <strong>{score}</strong> / {config.questions.length}</> : <>Selecciona tus respuestas. El examen se envía al agotar el tiempo o al presionar "Enviar".</>}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setAnswers({}); }}>
-              <RefreshCw className="mr-2 h-4 w-4"/> Reiniciar
-            </Button>
-            <Button onClick={() => { setSubmitted(true); onFinish?.(answers); }}>
-              <CheckCircle2 className="mr-2 h-4 w-4"/> Enviar
-            </Button>
+            <Button variant="outline" onClick={() => { setAnswers({}); setSubmitted(false); setResult(null); setTimeLeft(config.durationMinutes*60) }}><RefreshCw className="mr-2 h-4 w-4"/> Reiniciar</Button>
+            <Button onClick={submitNow}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
           </div>
         </div>
+
+        <ResultsCard result={result} />
       </CardContent>
     </Card>
   );
