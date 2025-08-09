@@ -372,7 +372,8 @@ export default function RiskCourseApp() {
   }, [state.answersByQuiz])
 
   const totalSimQuestions = COURSE.simulator.questions.length
-  const bestSimScore = Math.max(0, *([0] + state.simulator.runs.map((r) => r.score || 0)))
+  const runs = state.simulator?.runs ?? [];
+  const bestSimScore = runs.length ? Math.max(...runs.map(r => r.score ?? 0)) : 0;
 
   function exportJSON() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
