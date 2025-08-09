@@ -483,55 +483,88 @@ export default function RiskCourseApp() {
   const [state, setState] = useState(() =>
     loadState() || {
       currentModuleId: COURSE.modules[0].id,
-      answersByQuiz: {}, // { quizId: { [questionId]: answerIndex } }
-      activityTexts: {}, // { activityId: string }
-      simulator: { answers: {}, runs: [], timeLeft: null },
-      profile: { name: "", email: "" },
+      answersByQuiz: {},
+      activityTexts: {},
+      simulator: { answers: {}, runs: [], timeLeft: null, lastResult: null },
+      profile: { name: '', email: '' },
     }
-  );
+  )
 
-  useEffect(() => saveState(state), [state]);
+  useEffect(() => saveState(state), [state])
 
   const currentModule = useMemo(
     () => COURSE.modules.find((m) => m.id === state.currentModuleId) || COURSE.modules[0],
     [state.currentModuleId]
-  );
+  )
 
   const progress = useMemo(() => {
     const totalQuestions = COURSE.modules.reduce(
       (acc, m) => acc + m.quizzes.reduce((a, q) => a + q.questions.length, 0),
       0
-    );
-    const answered = Object.values(state.answersByQuiz).reduce((acc, qa) => acc + Object.keys(qa || {}).length, 0);
-    const pct = totalQuestions ? Math.round((answered / totalQuestions) * 100) : 0;
-    return { totalQuestions, answered, pct };
-  }, [state.answersByQuiz]);
+    )
+    const answered = Object.values(state.answersByQuiz).reduce((acc, qa) => acc + Object.keys(qa || {}).length, 0)
+    const pct = totalQuestions ? Math.round((answered / totalQuestions) * 100) : 0
+    return { totalQuestions, answered, pct }
+  }, [state.answersByQuiz])
 
-  const totalSimQuestions = COURSE.simulator.questions.length;
-  const bestSimScore = Math.max(0, ...state.simulator.runs.map((r) => r.score || 0));
+  const totalSimQuestions = COURSE.simulator.questions.length
+  const runs = state.simulator?.runs ?? []
+  const bestSimScore = runs.length ? Math.max(...runs.map(r => r.score ?? 0)) : 0
+  const passThreshold = 0.7 // 70%
+  const last = state.simulator?.lastResult
+  const lastPct = last ? (Object.values(last.byDomain).reduce((a,v)=>a+v.correct,0) / Object.values(last.byDomain).reduce((a,v)=>a+v.total,0)) : 0
+  const isEligible = last && lastPct >= passThreshold
 
-  // Export / Import progreso
   function exportJSON() {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "curso-riesgos-progreso.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'curso-riesgos-progreso.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  function importJSON(file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try { const obj = JSON.parse(String(e.target?.result || '')); setState(obj) } catch { alert('Archivo inválido') }
+    }
+    reader.readAsText(file)
   }
 
-  function importJSON(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const obj = JSON.parse(String(e.target?.result || ""));
-        setState(obj);
-      } catch (err) {
-        alert("Archivo inválido");
-      }
-    };
-    reader.readAsText(file);
+  function printCertificate(){
+    const title = 'Certificado de Finalización'
+    const name = state.profile.name || 'Participante'
+    const date = new Date().toLocaleDateString()
+    const score = Math.round(lastPct * 100)
+    const w = window.open('', 'PRINT', 'height=800,width=1100')
+    w.document.write(`<!doctype html><html><head><title>${title}</title>
+      <style>
+        body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;padding:60px;background:#f8fafc}
+        .card{max-width:900px;margin:0 auto;padding:60px;border:1px solid #e5e7eb;border-radius:24px;background:white;}
+        .hdr{font-size:28px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+        .sub{color:#6b7280;margin-bottom:24px}
+        .name{font-size:36px,font-weight:800;margin:24px 0}
+        .meta{margin-top:24px;color:#374151}
+        .row{display:flex;justify-content:space-between;margin-top:40px}
+        .sig{border-top:1px solid #e5e7eb;padding-top:8px;width:40%;text-align:center;color:#6b7280}
+        .badge{display:inline-block;border:1px solid #111;border-radius:9999px;padding:6px 12px;font-size:12px;margin-top:12px}
+        @media print { body{background:white} }
+      </style>
+    </head><body><div class="card">
+      <div class="hdr">${title}</div>
+      <div class="sub">Preparación para Certificación en Gestión de Riesgos (PMI‑RMP®)</div>
+      <div>Otorgado a</div>
+      <div class="name">${name}</div>
+      <div>por completar el simulador con un puntaje de <strong>${score}%</strong> y los módulos fundamentales del curso.</div>
+      <div class="meta">Fecha: ${date}</div>
+      <div class="row">
+        <div class="sig">Director del Programa</div>
+        <div class="sig">Coordinación Académica</div>
+      </div>
+      <div class="badge">Referencia: curso-riesgos · vercel</div>
+    </div></body></html>`)
+    w.document.close(); w.focus(); w.print(); w.close();
   }
 
   return (
@@ -542,12 +575,12 @@ export default function RiskCourseApp() {
             <LayoutDashboard className="h-6 w-6" />
             <div>
               <h1 className="text-lg font-semibold">{COURSE.title}</h1>
-              <p className="text-xs text-muted-foreground">{COURSE.subtitle}</p>
+              <p className="text-xs text-gray-500">{COURSE.subtitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={exportJSON}><Download className="mr-2 h-4 w-4"/> Exportar avance</Button>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2 text-sm">
               <Upload className="h-4 w-4"/> Importar
               <input type="file" accept="application/json" className="hidden" onChange={(e) => e.target.files?.[0] && importJSON(e.target.files[0])} />
             </label>
@@ -564,23 +597,23 @@ export default function RiskCourseApp() {
             </CardHeader>
             <CardContent className="space-y-2">
               {COURSE.modules.map((m, idx) => {
-                const modQuestions = m.quizzes.reduce((a, q) => a + q.questions.length, 0);
-                const answeredInMod = m.quizzes.reduce((a, q) => a + Object.keys(state.answersByQuiz[q.id] || {}).length, 0);
-                const pct = modQuestions ? Math.round((answeredInMod / modQuestions) * 100) : 0;
-                const active = state.currentModuleId === m.id;
+                const modQuestions = m.quizzes.reduce((a, q) => a + q.questions.length, 0)
+                const answeredInMod = m.quizzes.reduce((a, q) => a + Object.keys(state.answersByQuiz[q.id] || {}).length, 0)
+                const pct = modQuestions ? Math.round((answeredInMod / modQuestions) * 100) : 0
+                const active = state.currentModuleId === m.id
                 return (
                   <button
                     key={m.id}
-                    className={`w-full rounded-xl border p-3 text-left ${active ? "border-primary" : ""}`}
+                    className={`w-full rounded-xl border p-3 text-left ${active ? 'border-black' : ''}`}
                     onClick={() => setState({ ...state, currentModuleId: m.id })}
                   >
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{idx + 1}. {m.title}</div>
-                      <span className="text-xs text-muted-foreground">{pct}%</span>
+                      <span className="text-xs text-gray-500">{pct}%</span>
                     </div>
                     <Progress value={pct} className="mt-2"/>
                   </button>
-                );
+                )
               })}
             </CardContent>
           </Card>
@@ -590,20 +623,12 @@ export default function RiskCourseApp() {
               <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5"/> Tu perfil</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Input
-                placeholder="Tu nombre"
-                value={state.profile.name}
-                onChange={(e) => setState({ ...state, profile: { ...state.profile, name: e.target.value } })}
-              />
-              <Input
-                placeholder="Tu email"
-                value={state.profile.email}
-                onChange={(e) => setState({ ...state, profile: { ...state.profile, email: e.target.value } })}
-              />
+              <Input placeholder="Tu nombre" value={state.profile.name} onChange={(e) => setState({ ...state, profile: { ...state.profile, name: e.target.value } })} />
+              <Input placeholder="Tu email" value={state.profile.email} onChange={(e) => setState({ ...state, profile: { ...state.profile, email: e.target.value } })} />
               <div className="rounded-xl border p-3 text-sm">
                 <div className="mb-1 font-medium">Progreso general</div>
                 <Progress value={progress.pct}/>
-                <div className="mt-2 text-xs text-muted-foreground">{progress.answered}/{progress.totalQuestions} preguntas respondidas</div>
+                <div className="mt-2 text-xs text-gray-500">{progress.answered}/{progress.totalQuestions} preguntas respondidas</div>
               </div>
             </CardContent>
           </Card>
@@ -616,6 +641,22 @@ export default function RiskCourseApp() {
               <Stat icon={Clock} label="Duración" value={`${COURSE.simulator.durationMinutes} min`}/>
               <Stat icon={ShieldAlert} label="Preguntas" value={totalSimQuestions}/>
               <Stat icon={CheckCircle2} label="Mejor puntaje" value={`${bestSimScore}/${totalSimQuestions}`}/>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5"/> Certificado</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>Requisito: ≥ 70% en el simulador más reciente.</div>
+              <div className={`rounded-xl border p-3 ${isEligible ? '' : 'opacity-60'}`}>
+                <div className="text-xs text-gray-500 mb-1">Nombre en certificado</div>
+                <Input placeholder="Tu nombre tal como irá en el certificado" value={state.profile.name} onChange={(e)=> setState({ ...state, profile: { ...state.profile, name: e.target.value } })} />
+                <div className="mt-2 flex gap-2">
+                  <Button onClick={printCertificate} disabled={!isEligible}>Imprimir / Guardar PDF</Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </aside>
@@ -631,9 +672,9 @@ export default function RiskCourseApp() {
                 {/* Lecciones */}
                 {currentModule.lessons?.map((l) => (
                   <div key={l.id} className="rounded-2xl border p-4">
-                    <div className="mb-1 text-sm text-muted-foreground">Lección</div>
+                    <div className="mb-1 text-sm text-gray-500">Lección</div>
                     <div className="text-base font-medium">{l.title}</div>
-                    <p className="mt-2 text-sm text-muted-foreground">{l.content}</p>
+                    <p className="mt-2 text-sm text-gray-600">{l.content}</p>
                   </div>
                 ))}
 
@@ -642,7 +683,7 @@ export default function RiskCourseApp() {
                   <Activity
                     key={a.id}
                     activity={a}
-                    savedText={state.activityTexts[a.id] || ""}
+                    savedText={state.activityTexts[a.id] || ''}
                     onSave={(text) => setState({ ...state, activityTexts: { ...state.activityTexts, [a.id]: text } })}
                   />
                 ))}
@@ -666,14 +707,14 @@ export default function RiskCourseApp() {
                     <div className="text-base font-medium flex items-center gap-2"><Clock className="h-5 w-5"/> Examen final simulado</div>
                     <Badge>{COURSE.simulator.questions.length} preguntas</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Temporizador y retroalimentación. Puedes reiniciar y repetir para mejorar tu puntaje.</p>
+                  <p className="text-sm text-gray-600">Temporizador y retroalimentación. Al finalizar verás resultados por dominio y una sugerencia de estudio.</p>
                   <Simulator
                     config={COURSE.simulator}
                     saved={state.simulator}
-                    onFinish={(answers) => {
-                      const score = COURSE.simulator.questions.reduce((s, q) => s + ((answers[q.id] ?? -1) === q.answerIndex ? 1 : 0), 0);
-                      const run = { date: new Date().toISOString(), score };
-                      setState({ ...state, simulator: { answers, runs: [...state.simulator.runs, run], timeLeft: null } });
+                    onFinish={(answers, payload) => {
+                      const score = payload.score
+                      const run = { date: new Date().toISOString(), score }
+                      setState({ ...state, simulator: { answers, runs: [...runs, run], timeLeft: null, lastResult: payload } })
                     }}
                   />
                 </div>
@@ -683,10 +724,11 @@ export default function RiskCourseApp() {
         </section>
       </main>
 
-      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-xs text-muted-foreground">
-        <div className="mt-2">© {new Date().getFullYear()} Curso de preparación en gestión de riesgos. Esta es una versión MVP extensible.</div>
+      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 text-xs text-gray-500">
+        <div className="mt-2">© {new Date().getFullYear()} Curso de preparación en gestión de riesgos. Versión MVP.</div>
       </footer>
     </div>
-  );
+  )
 }
+
 
