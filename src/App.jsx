@@ -22,14 +22,90 @@ import { Progress } from "@/components/ui/progress";
  * - Ajusta la duración del simulador en COURSE.simulator.durationMinutes.
  */
 
-// ———————————— Datos del curso (puedes editar libremente) ————————————
+// ———————————— Mini componentes de UI ————————————
+function Badge({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
+      {children}
+    </span>
+  );
+}
+
+function Stat({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="h-5 w-5" />
+      <div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className="text-lg font-semibold">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+// ———————————— Mini gráfico (SVG, sin dependencias) ————————————
+function MiniBarChart({ data = [], max = null, height = 120 }) {
+  const values = data.map((d) => d.value);
+  const maxVal = max ?? Math.max(1, ...values, 1);
+  const barW = 100 / (data.length || 1);
+  return (
+    <div className="w-full">
+      <svg viewBox={`0 0 100 ${height}`} className="w-full h-[140px]">
+        {data.map((d, i) => {
+          const h = (d.value / maxVal) * (height - 20);
+          const x = i * barW + 5;
+          const y = height - h - 5;
+          const w = barW - 10 / (data.length || 1);
+          return (
+            <g key={i}>
+              <rect x={x} y={y} width={w} height={h} rx="3" className="fill-black/80" />
+              <text x={x + w / 2} y={height - 2} textAnchor="middle" fontSize="7" className="fill-gray-500">
+                {d.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function LessonCard({ lesson }) {
+  return (
+    <div className="rounded-2xl border p-4 space-y-3">
+      <div className="mb-1 text-sm text-gray-500">Lección</div>
+      <div className="text-base font-medium">{lesson.title}</div>
+      <p className="mt-1 text-sm text-gray-600 whitespace-pre-line">{lesson.content}</p>
+      {lesson.chart?.data?.length ? (
+        <div className="mt-2">
+          <div className="mb-1 text-xs text-gray-500">Gráfico conceptual</div>
+          <MiniBarChart data={lesson.chart.data} max={lesson.chart.max} />
+          {lesson.chart.caption && (
+            <div className="mt-1 text-[11px] text-gray-500">{lesson.chart.caption}</div>
+          )}
+        </div>
+      ) : null}
+      {lesson.video && (
+        <div className="pt-2">
+          <a href={lesson.video} target="_blank" rel="noreferrer">
+            <Button variant="outline">
+              <Play className="mr-2 h-4 w-4" /> Ver video de apoyo
+            </Button>
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ———————————— Datos del curso ————————————
 const COURSE = {
   title: 'Preparación para Certificación en Gestión de Riesgos (PMI-RMP®)',
   subtitle: 'Curso práctico con actividades y exámenes',
   simulator: {
     durationMinutes: 60,
     questions: [
-      // --- Simulador: mezcla de dominios (25 preguntas) ---
+      // (25 preguntas del simulador)
       { id: 'simq1', prompt: 'Estás planificando la gestión de riesgos en un proyecto de Odoo ERP con fuerte resistencia al cambio. ¿Cuál es la MEJOR acción inicial?', options: ['Aplicar de inmediato reservas de contingencia en el cronograma','Definir roles, apetito de riesgo y umbrales con los interesados clave','Ejecutar entrevistas para identificar riesgos técnicos','Elevar un cambio de alcance para añadir un plan de comunicación'], answerIndex: 1, explanation: 'En Planificar la Gestión de Riesgos se establecen roles, apetito y umbrales antes de identificar y responder.', domain: 'Planificación' },
       { id: 'simq2', prompt: 'Tienes una lista extensa de riesgos. El patrocinador te pide priorizar hoy. ¿Qué herramienta cualitativa usas primero?', options: ['Simulación Monte Carlo','Árbol de decisiones','Matriz probabilidad-impacto con criterios estandarizados','Análisis de sensibilidad (tornado)'], answerIndex: 2, explanation: 'La priorización inicial se aborda con análisis cualitativo prob‑impacto.', domain: 'Análisis cualitativo' },
       { id: 'simq3', prompt: 'Una oportunidad permitiría reducir 8% el tiempo de pruebas si se contrata un experto externo. Mejor estrategia:', options: ['Aceptar','Explotar','Transferir','Mitigar'], answerIndex: 1, explanation: 'Explotar maximiza la probabilidad de que la oportunidad ocurra.', domain: 'Respuestas a oportunidades' },
@@ -58,38 +134,87 @@ const COURSE = {
     ],
   },
   modules: [
-    // MÓDULO 1 (ya existente)
     {
       id: 'm1',
       title: 'Fundamentos y marco de referencia',
       lessons: [
-        { id: 'm1l1', title: 'Conceptos clave y terminología', content: 'Diferencia entre riesgo y issue; amenazas vs oportunidades; apetito, tolerancia y umbrales.' },
-        { id: 'm1l2', title: 'Procesos de gestión de riesgos', content: 'Planificar, Identificar, Analizar (cuali/cuanti), Planificar respuestas, Implementar, Monitorear y Controlar.' },
+        {
+          id: 'm1l1',
+          title: 'Conceptos clave y terminología',
+          content: 'Riesgo: evento incierto que, si ocurre, impacta objetivos.
+Issue: evento que ya ocurrió.
+Amenaza vs Oportunidad: impacto negativo vs positivo.
+Apetito: preferencia organizacional por el riesgo (macro).
+Tolerancia/Umbral: límites medibles que disparan acciones.',
+          chart: { data: [
+            { label: 'Amenaza', value: 60 },
+            { label: 'Oport.', value: 40 },
+            { label: 'Apet.', value: 70 },
+            { label: 'Umbral', value: 50 },
+          ], caption: 'Relación conceptual entre tipos de riesgo y gobierno' },
+          video: 'https://www.youtube.com/watch?v=1G5a3Q_risk'
+        },
+        {
+          id: 'm1l2',
+          title: 'Procesos de gestión de riesgos',
+          content: 'Secuencia típica: Planificar → Identificar → Analizar (cuali/cuanti) → Planificar respuestas → Implementar → Monitorear/Controlar.
+Cada proceso tiene entradas, herramientas y salidas específicas (ITTOs) que conviene dominar para el examen.',
+          chart: { data: [
+            { label: 'Plan', value: 20 },
+            { label: 'ID', value: 30 },
+            { label: 'Cuali', value: 40 },
+            { label: 'Cuanti', value: 35 },
+            { label: 'Resp', value: 25 },
+            { label: 'Mon', value: 30 },
+          ], caption: 'Peso relativo aproximado de esfuerzo por proceso' },
+          video: 'https://www.youtube.com/watch?v=2H7p9Q_process'
+        },
       ],
       activities: [
         { id: 'm1a1', title: 'Mapa conceptual de riesgos', brief: 'Relaciona apetito, umbrales, RBS y procesos. Describe 3 ejemplos de tu contexto.', placeholder: 'Describe tu mapa o pega enlace a Miro/Mural…' },
       ],
       quizzes: [
-        {
-          id: 'm1q1', title: 'Mini-examen Módulo 1 (6 preguntas)',
-          questions: [
-            { id: 'm1q1_1', prompt: '¿Qué diferencia principal hay entre apetito y tolerancia al riesgo?', options: ['Apetito = máximo permitido; Tolerancia = preferencia','Apetito = preferencia general; Tolerancia = rangos medibles','Son sinónimos','Apetito solo a amenazas'], answerIndex: 1, explanation: 'Apetito (macro) vs Tolerancia (límites operativos).', domain: 'Fundamentos' },
-            { id: 'm1q1_2', prompt: 'Selecciona el mejor ejemplo de riesgo (no issue):', options: ['Retraso ya ocurrido','Podría faltar un ingeniero clave','Factura rechazada','Servidor caído ahora'], answerIndex: 1, explanation: 'Riesgo = evento incierto futuro.', domain: 'Fundamentos' },
-            { id: 'm1q1_3', prompt: 'Qué artefacto define la estrategia general de gestión de riesgos?', options: ['Acta','Plan de riesgos','Registro de interesados','Matriz RACI'], answerIndex: 1, explanation: 'El plan de riesgos define enfoque, roles y reporting.', domain: 'Planificación' },
-            { id: 'm1q1_4', prompt: 'Qué significa oportunidad en gestión de riesgos?', options: ['Evento incierto con efecto positivo','Evento seguro con efecto neutro','Costo hundido','Evento fuera de alcance'], answerIndex: 0, explanation: 'Oportunidad = impacto positivo si ocurre.', domain: 'Fundamentos' },
-            { id: 'm1q1_5', prompt: 'El apetito de riesgo lo define…', options: ['El equipo de proyecto','La alta dirección/Patrocinador','El proveedor','PMO obligatoriamente'], answerIndex: 1, explanation: 'Se establece a nivel organizacional/patrocinio.', domain: 'Gobernanza' },
-            { id: 'm1q1_6', prompt: 'Cuál NO es un beneficio del registro de riesgos?', options: ['Trazabilidad de decisiones','Evitar todos los riesgos','Responsables claros','Estado y próximos pasos'], answerIndex: 1, explanation: 'No se puede “evitar todos los riesgos”.', domain: 'Registro' },
-          ],
-        },
+        { id: 'm1q1', title: 'Mini-examen Módulo 1 (6 preguntas)', questions: [
+          { id: 'm1q1_1', prompt: '¿Qué diferencia principal hay entre apetito y tolerancia al riesgo?', options: ['Apetito = máximo permitido; Tolerancia = preferencia','Apetito = preferencia general; Tolerancia = rangos medibles','Son sinónimos','Apetito solo a amenazas'], answerIndex: 1, explanation: 'Apetito (macro) vs Tolerancia (límites operativos).', domain: 'Fundamentos' },
+          { id: 'm1q1_2', prompt: 'Selecciona el mejor ejemplo de riesgo (no issue):', options: ['Retraso ya ocurrido','Podría faltar un ingeniero clave','Factura rechazada','Servidor caído ahora'], answerIndex: 1, explanation: 'Riesgo = evento incierto futuro.', domain: 'Fundamentos' },
+          { id: 'm1q1_3', prompt: 'Qué artefacto define la estrategia general de gestión de riesgos?', options: ['Acta','Plan de riesgos','Registro de interesados','Matriz RACI'], answerIndex: 1, explanation: 'El plan de riesgos define enfoque, roles y reporting.', domain: 'Planificación' },
+          { id: 'm1q1_4', prompt: 'Qué significa oportunidad en gestión de riesgos?', options: ['Evento incierto con efecto positivo','Evento seguro con efecto neutro','Costo hundido','Evento fuera de alcance'], answerIndex: 0, explanation: 'Oportunidad = impacto positivo si ocurre.', domain: 'Fundamentos' },
+          { id: 'm1q1_5', prompt: 'El apetito de riesgo lo define…', options: ['El equipo de proyecto','La alta dirección/Patrocinador','El proveedor','PMO obligatoriamente'], answerIndex: 1, explanation: 'Se establece a nivel organizacional/patrocinio.', domain: 'Gobernanza' },
+          { id: 'm1q1_6', prompt: 'Cuál NO es un beneficio del registro de riesgos?', options: ['Trazabilidad de decisiones','Evitar todos los riesgos','Responsables claros','Estado y próximos pasos'], answerIndex: 1, explanation: 'No se puede “evitar todos los riesgos”.', domain: 'Registro' },
+        ]},
       ],
     },
-    // MÓDULO 2 (ya existente)
     {
       id: 'm2',
       title: 'Plan de gestión de riesgos',
       lessons: [
-        { id: 'm2l1', title: 'Componentes del plan', content: 'Roles, RBS, metodologías, criterios prob‑impacto, formatos, umbrales y reporting.' },
-        { id: 'm2l2', title: 'Gobernanza y responsabilidades', content: 'Propietarios de riesgo, comité de riesgos, escalamiento y auditoría.' },
+        {
+          id: 'm2l1',
+          title: 'Componentes del plan',
+          content: 'Incluye: objetivo y alcance; roles y responsabilidades; RBS; criterios prob‑impacto; métodos de análisis; umbrales; reservas y gobernanza; reporting y frecuencia.
+El plan estandariza y evita decisiones ad hoc.',
+          chart: { data: [
+            { label: 'Roles', value: 20 },
+            { label: 'RBS', value: 30 },
+            { label: 'Criterios', value: 40 },
+            { label: 'Umbrales', value: 35 },
+            { label: 'Rep.', value: 25 },
+          ], caption: 'Énfasis típico al redactar un plan' },
+          video: 'https://www.youtube.com/watch?v=3Q2planRBS'
+        },
+        {
+          id: 'm2l2',
+          title: 'Gobernanza y responsabilidades',
+          content: 'Define propietarios de riesgo, comité de riesgos, niveles de escalamiento y auditoría.
+Un owner por riesgo asegura ejecución de respuestas y seguimiento.',
+          chart: { data: [
+            { label: 'Owner', value: 45 },
+            { label: 'Comité', value: 35 },
+            { label: 'Escala', value: 30 },
+            { label: 'Aud.', value: 20 },
+          ], caption: 'Elementos clave de gobernanza' },
+          video: 'https://www.youtube.com/watch?v=4govRisk'
+        },
       ],
       activities: [
         { id: 'm2a1', title: 'Esbozo de plan de riesgos', brief: 'Redacta 1 página con roles, criterios y umbrales para un proyecto real.', placeholder: 'Escribe tu esbozo aquí…' },
@@ -104,35 +229,77 @@ const COURSE = {
         ]},
       ],
     },
-    // MÓDULO 3 – Identificación de riesgos
     {
       id: 'm3',
       title: 'Identificación de riesgos',
       lessons: [
-        { id: 'm3l1', title: 'Técnicas y fuentes', content: 'Delphi, brainstorming, checklist, entrevistas, análisis de supuestos/ restricciones, lecciones aprendidas.' },
-        { id: 'm3l2', title: 'Registro de riesgos (atributos)', content: 'Descripción, causa, efecto, categoría RBS, propietario propuesto, disparadores y supuestos relacionados.' },
+        {
+          id: 'm3l1',
+          title: 'Técnicas y fuentes',
+          content: 'Combina técnicas para reducir sesgo: Delphi (consenso anónimo), brainstorming (divergencia), entrevistas (profundidad), checklists (cobertura), análisis de supuestos y restricciones (desbloquea riesgos sistémicos).',
+          chart: { data: [
+            { label: 'Delphi', value: 35 },
+            { label: 'Brain', value: 30 },
+            { label: 'Entrev', value: 25 },
+            { label: 'Chk', value: 20 },
+            { label: 'Sup/Res', value: 40 },
+          ], caption: 'Eficacia relativa (ejemplo) por técnica' },
+          video: 'https://www.youtube.com/watch?v=5idRiskTech'
+        },
+        {
+          id: 'm3l2',
+          title: 'Registro de riesgos (atributos)',
+          content: 'Registra: causa → riesgo → impacto esperado; categoría RBS; disparadores; owner propuesto; respuesta preliminar.
+Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo que resultaría en [impacto]”.',
+          chart: { data: [
+            { label: 'Causa', value: 30 },
+            { label: 'Riesgo', value: 40 },
+            { label: 'Impacto', value: 35 },
+            { label: 'RBS', value: 20 },
+          ], caption: 'Atributos mínimos recomendados' },
+          video: 'https://www.youtube.com/watch?v=6regRiskLog'
+        },
       ],
       activities: [
         { id: 'm3a1', title: 'Ejercicio de identificación', brief: 'Identifica 8 riesgos (5 amenazas, 3 oportunidades) para un caso ERP y clasifícalos en RBS.', placeholder: 'Lista y clasifica tus riesgos…' },
       ],
       quizzes: [
         { id: 'm3q1', title: 'Mini-examen Módulo 3 (6 preguntas)', questions: [
-          { id: 'm3q1_1', prompt: 'Mejor técnica para evitar sesgo de líder dominante:', options: ['Brainstorming abierto','Delphi','Entrevistas públicas','Tormenta de ideas con votación a mano alzada'], answerIndex: 1, explanation: 'Delphi garantiza anonimato y consenso.', domain: 'Identificación' },
+          { id: 'm3q1_1', prompt: 'Mejor técnica para evitar sesgo de líder dominante:', options: ['Brainstorming abierto','Delphi','Entrevistas públicas','Votación a mano alzada'], answerIndex: 1, explanation: 'Delphi garantiza anonimato y consenso.', domain: 'Identificación' },
           { id: 'm3q1_2', prompt: 'Cuál es una ENTRADA de Identificar Riesgos?', options: ['Plan de riesgos','Registro de riesgos','EMV','Curva S'], answerIndex: 0, explanation: 'Plan de riesgos guía la identificación.', domain: 'Entradas' },
           { id: 'm3q1_3', prompt: 'Elemento que NO es típico del registro en esta fase:', options: ['Causa','Impacto monetario exacto','Categoría RBS','Disparadores'], answerIndex: 1, explanation: 'El impacto monetario exacto es del cuantitativo.', domain: 'Registro' },
-          { id: 'm3q1_4', prompt: 'Qué técnica ayuda a descubrir “puntos ciegos” regulatorios?', options: ['Revisión normativa','Mapa de calor','PERT','Poker planning'], answerIndex: 0, explanation: 'La base regulatoria es crítica para cumplimiento.', domain: 'Identificación' },
+          { id: 'm3q1_4', prompt: 'Qué técnica ayuda a descubrir “puntos ciegos” regulatorios?', options: ['Revisión normativa','Mapa de calor','PERT','Planning poker'], answerIndex: 0, explanation: 'La base regulatoria es crítica para cumplimiento.', domain: 'Identificación' },
           { id: 'm3q1_5', prompt: 'Riesgo vs causa:', options: ['Son lo mismo','La causa antecede al riesgo','La causa es la respuesta','La causa es el impacto'], answerIndex: 1, explanation: 'Causa → Riesgo → Impacto.', domain: 'Fundamentos' },
           { id: 'm3q1_6', prompt: 'Qué documento histórico ayuda más en identificación?', options: ['Lecciones aprendidas','Presupuesto vigente','Plan de adquisiciones','WBS sólo'], answerIndex: 0, explanation: 'Lecciones aprendidas evitan repetir errores.', domain: 'Lecciones' },
         ]},
       ],
     },
-    // MÓDULO 4 – Análisis cualitativo y cuantitativo
     {
       id: 'm4',
       title: 'Análisis cualitativo y cuantitativo',
       lessons: [
-        { id: 'm4l1', title: 'Cualitativo (prob‑impacto, urgencia)', content: 'Criterios normalizados, escalas, sesgos, acuerdos de priorización.' },
-        { id: 'm4l2', title: 'Cuantitativo (EMV, Monte Carlo)', content: 'Distribuciones, correlación, sensibilidad, árbol de decisiones.' },
+        {
+          id: 'm4l1',
+          title: 'Cualitativo (prob‑impacto, urgencia)',
+          content: 'Normaliza escalas (por ejemplo 1–5) y criterios de probabilidad e impacto. Añade urgencia y detectabilidad si aplica. La salida es una lista priorizada con racionales.',
+          chart: { data: [
+            { label: 'Prob', value: 50 },
+            { label: 'Impact', value: 50 },
+            { label: 'Urg', value: 30 },
+          ], caption: 'Criterios frecuentes en cualitativo' },
+          video: 'https://www.youtube.com/watch?v=7qualRisk'
+        },
+        {
+          id: 'm4l2',
+          title: 'Cuantitativo (EMV, Monte Carlo)',
+          content: 'El análisis cuantitativo convierte la incertidumbre en métricas: EMV = p × i, árboles de decisión para alternativas, simulación Monte Carlo para distribución de resultados. Considera correlaciones.',
+          chart: { data: [
+            { label: 'EMV', value: 40 },
+            { label: 'Tornado', value: 35 },
+            { label: 'MC', value: 45 },
+          ], caption: 'Herramientas clave del cuantitativo' },
+          video: 'https://www.youtube.com/watch?v=8quantRisk'
+        },
       ],
       activities: [
         { id: 'm4a1', title: 'Priorización cualitativa', brief: 'Construye una matriz prob‑impacto para 12 riesgos identificados y prioriza el Top 5.', placeholder: 'Pega tu matriz o describe el Top 5 con razones…' },
@@ -148,13 +315,36 @@ const COURSE = {
         ]},
       ],
     },
-    // MÓDULO 5 – Planificación e implementación de respuestas
     {
       id: 'm5',
       title: 'Planificación e implementación de respuestas',
       lessons: [
-        { id: 'm5l1', title: 'Estrategias para amenazas y oportunidades', content: 'Evitar, mitigar, transferir, aceptar; Explorar, compartir, mejorar, aceptar.' },
-        { id: 'm5l2', title: 'Reservas, triggers y planes de contingencia', content: 'Diferencia contingencia vs gestión, criterios de liberación.' },
+        {
+          id: 'm5l1',
+          title: 'Estrategias para amenazas y oportunidades',
+          content: 'Amenazas: evitar, mitigar, transferir, aceptar.
+Oportunidades: explotar, compartir, mejorar, aceptar.
+Selecciona estrategia según probabilidad, impacto, costo y apetito.',
+          chart: { data: [
+            { label: 'Evitar', value: 25 },
+            { label: 'Mitigar', value: 40 },
+            { label: 'Transf', value: 30 },
+            { label: 'Aceptar', value: 20 },
+          ], caption: 'Frecuencia típica de uso (ejemplo)' },
+          video: 'https://www.youtube.com/watch?v=9respRisk'
+        },
+        {
+          id: 'm5l2',
+          title: 'Reservas, triggers y contingencias',
+          content: 'Contingencia: para riesgos identificados; Gestión: para desconocidos.
+Define triggers observables para activar planes. Documenta supuestos y límites de uso de reservas.',
+          chart: { data: [
+            { label: 'Cont', value: 45 },
+            { label: 'Gest', value: 35 },
+            { label: 'Trig', value: 40 },
+          ], caption: 'Componentes críticos en la respuesta' },
+          video: 'https://www.youtube.com/watch?v=10contRisk'
+        },
       ],
       activities: [
         { id: 'm5a1', title: 'Diseño de plan de respuesta', brief: 'Para los 5 riesgos Top, define estrategia, responsable, trigger y costo estimado.', placeholder: 'Plan de respuesta por riesgo…' },
@@ -169,13 +359,32 @@ const COURSE = {
         ]},
       ],
     },
-    // MÓDULO 6 – Monitoreo, control y mejora
     {
       id: 'm6',
       title: 'Monitoreo, control y mejora',
       lessons: [
-        { id: 'm6l1', title: 'Seguimiento de respuestas y KRIs', content: 'Indicadores, dashboards, auditorías de riesgo, revisiones periódicas.' },
-        { id: 'm6l2', title: 'Lecciones aprendidas y mejora continua', content: 'Captura sistemática, retroalimentación en el plan y cultura de riesgo.' },
+        {
+          id: 'm6l1',
+          title: 'Seguimiento de respuestas y KRIs',
+          content: 'Define indicadores adelantados (KRIs) y umbrales de alerta. Revisa ejecución de respuestas, riesgos residuales y emergentes. Usa tableros visuales.',
+          chart: { data: [
+            { label: 'KRI', value: 50 },
+            { label: 'Resp', value: 35 },
+            { label: 'Resid', value: 30 },
+          ], caption: 'Focos de monitoreo' },
+          video: 'https://www.youtube.com/watch?v=11kriRisk'
+        },
+        {
+          id: 'm6l2',
+          title: 'Lecciones y mejora continua',
+          content: 'Captura sistemática: qué se esperaba, qué ocurrió, por qué, qué haríamos distinto. Integra las lecciones al plan y a la RBS. Comunica a toda la organización.',
+          chart: { data: [
+            { label: 'Capt', value: 30 },
+            { label: 'Anal', value: 35 },
+            { label: 'Integr', value: 40 },
+          ], caption: 'Ciclo de lecciones aprendidas' },
+          video: 'https://www.youtube.com/watch?v=12lessonRisk'
+        },
       ],
       activities: [
         { id: 'm6a1', title: 'Simulación de comité de riesgos', brief: 'Redacta minuta con decisiones de escalamiento, cierre y actualización de reservas.', placeholder: 'Minuta de comité…' },
@@ -186,7 +395,7 @@ const COURSE = {
           { id: 'm6q1_2', prompt: 'Qué hacer con un riesgo que ya ocurrió?', options: ['Mantener como riesgo','Convertirlo en issue y gestionar','Eliminar del registro sin más','Ignorarlo'], answerIndex: 1, explanation: 'Pasa a issue/gestión de incidentes.', domain: 'Control' },
           { id: 'm6q1_3', prompt: 'Qué documento debe actualizarse tras ejecutar una respuesta?', options: ['Diccionario EDT','Registro de riesgos','Acta constitución','Contrato marco'], answerIndex: 1, explanation: 'Registro refleja estado/residual.', domain: 'Registro' },
           { id: 'm6q1_4', prompt: 'Cuándo conviene cerrar un riesgo?', options: ['Nunca','Cuando prob y/o impacto son insignificantes o ya no aplican','Solo al final del proyecto','Cuando el patrocinador lo pida'], answerIndex: 1, explanation: 'Se cierra si pierde relevancia o ya no puede ocurrir.', domain: 'Control' },
-          { id: 'm6q1_5', prompt: 'Qué práctica asegura aprendizaje organizacional?', options: ['No documentar para ahorrar tiempo','Lecciones aprendidas integradas a procesos','Hacer reuniones ad hoc sin registros','Delegar todo a QA'], answerIndex: 1, explanation: 'Lecciones integradas y reutilizadas.', domain: 'Mejora continua' },
+          { id: 'm6q1_5', prompt: 'Qué práctica asegura aprendizaje organizacional?', options: ['No documentar para ahorrar tiempo','Lecciones aprendidas integradas a procesos','Reuniones ad hoc sin registros','Delegar todo a QA'], answerIndex: 1, explanation: 'Lecciones integradas y reutilizadas.', domain: 'Mejora continua' },
         ]},
       ],
     },
@@ -211,39 +420,28 @@ function saveState(state) {
   } catch (e) {}
 }
 
-// ———————————— Componentes de UI ————————————
-function Badge({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
-      {children}
-    </span>
-  );
-}
-
-function Stat({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-3">
-      <Icon className="h-5 w-5" />
-      <div>
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className="text-lg font-semibold">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-// ———————————— Quiz Engine ————————————
+// ———————————— Quiz (una pregunta a la vez) ————————————
 function Quiz({ quiz, onFinish, savedAnswers = {} }) {
-  const [answers, setAnswers] = useState(() => ({ ...savedAnswers }));
+  const [answers, setAnswers] = useState({ ...savedAnswers });
   const [submitted, setSubmitted] = useState(false);
+  const [index, setIndex] = useState(0);
+
+  const total = quiz.questions.length;
+  const q = quiz.questions[index];
 
   const score = useMemo(() => {
     let s = 0;
-    quiz.questions.forEach((q) => {
-      if (answers[q.id] === q.answerIndex) s += 1;
-    });
+    quiz.questions.forEach((qq) => { if (answers[qq.id] === qq.answerIndex) s += 1; });
     return s;
   }, [answers, quiz.questions]);
+
+  const atStart = index === 0;
+  const atEnd = index === total - 1;
+
+  function go(delta) {
+    const next = Math.min(total - 1, Math.max(0, index + delta));
+    setIndex(next);
+  }
 
   return (
     <Card className="mt-4">
@@ -251,71 +449,61 @@ function Quiz({ quiz, onFinish, savedAnswers = {} }) {
         <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/> {quiz.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {quiz.questions.map((q, idx) => (
-          <div key={q.id} className="rounded-2xl border p-4">
-            <div className="mb-2 text-sm text-muted-foreground">Pregunta {idx + 1} de {quiz.questions.length}</div>
-            <div className="mb-3 font-medium">{q.prompt}</div>
-            <div className="space-y-2">
-              {q.options.map((opt, i) => {
-                const isSelected = answers[q.id] === i;
-                const isCorrect = q.answerIndex === i;
-                const showColors = submitted;
-                const base = "w-full text-left rounded-xl border p-3";
-                const color = showColors
-                  ? isCorrect
-                    ? "border-emerald-500"
-                    : isSelected
-                      ? "border-rose-500"
-                      : ""
+        <div className="rounded-2xl border p-4">
+          <div className="mb-2 text-sm text-muted-foreground">Pregunta {index + 1} de {total}</div>
+          <div className="mb-3 font-medium">{q.prompt}</div>
+          <div className="space-y-2">
+            {q.options.map((opt, i) => {
+              const isSelected = answers[q.id] === i;
+              const isCorrect = q.answerIndex === i;
+              const showColors = submitted;
+              const base = "w-full text-left rounded-xl border p-3";
+              const color = showColors
+                ? isCorrect
+                  ? "border-emerald-500"
                   : isSelected
-                    ? "border-primary"
-                    : "";
-                return (
-                  <button
-                    key={i}
-                    className={`${base} ${color}`}
-                    onClick={() => !submitted && setAnswers({ ...answers, [q.id]: i })}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{opt}</span>
-                      {submitted && isCorrect && <CheckCircle2 className="h-5 w-5"/>}
-                      {submitted && !isCorrect && isSelected && <XCircle className="h-5 w-5"/>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {submitted && (
-              <div className="mt-3 text-sm text-muted-foreground">
-                <strong>Explicación: </strong>{q.explanation}
-                {q.domain && (
-                  <div className="mt-1"><Badge>{q.domain}</Badge></div>
-                )}
-              </div>
-            )}
+                    ? "border-rose-500"
+                    : ""
+                : isSelected
+                  ? "border-black"
+                  : "";
+              return (
+                <button key={i} className={`${base} ${color}`} onClick={() => !submitted && setAnswers({ ...answers, [q.id]: i })}>
+                  <div className="flex items-center justify-between">
+                    <span>{opt}</span>
+                    {submitted && isCorrect && <CheckCircle2 className="h-5 w-5"/>}
+                    {submitted && !isCorrect && isSelected && <XCircle className="h-5 w-5"/>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        ))}
+          {submitted && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              <strong>Explicación: </strong>{q.explanation}
+              {q.domain && (<div className="mt-1"><Badge>{q.domain}</Badge></div>)}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             {submitted ? (
-              <>Puntaje: <strong>{score}</strong> / {quiz.questions.length}</>
+              <>Puntaje: <strong>{score}</strong> / {total}</>
             ) : (
-              <>Selecciona tus respuestas y envía para ver resultados.</>
+              <>Selecciona tu respuesta y continúa. Puedes enviar al final.</>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setAnswers({}); setSubmitted(false); }}>
-              <RefreshCw className="mr-2 h-4 w-4"/> Reiniciar
-            </Button>
-            {!submitted ? (
-              <Button onClick={() => { setSubmitted(true); onFinish?.(answers, score); }}>
-                <CheckCircle2 className="mr-2 h-4 w-4"/> Enviar
-              </Button>
+            <Button variant="outline" onClick={() => go(-1)} disabled={atStart}><RefreshCw className="mr-2 h-4 w-4 rotate-180"/> Anterior</Button>
+            {!atEnd ? (
+              <Button onClick={() => go(1)}><Play className="mr-2 h-4 w-4"/> Siguiente</Button>
             ) : (
-              <Button onClick={() => onFinish?.(answers, score)}>
-                <Play className="mr-2 h-4 w-4"/> Continuar
-              </Button>
+              !submitted ? (
+                <Button onClick={() => { setSubmitted(true); onFinish?.(answers, score); }}><CheckCircle2 className="mr-2 h-4 w-4"/> Enviar</Button>
+              ) : (
+                <Button onClick={() => onFinish?.(answers, score)}><Play className="mr-2 h-4 w-4"/> Continuar</Button>
+              )
             )}
           </div>
         </div>
@@ -558,7 +746,7 @@ export default function RiskCourseApp() {
         .card{max-width:900px;margin:0 auto;padding:60px;border:1px solid #e5e7eb;border-radius:24px;background:white;}
         .hdr{font-size:28px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
         .sub{color:#6b7280;margin-bottom:24px}
-        .name{font-size:36px,font-weight:800;margin:24px 0}
+        .name{font-size:36px;font-weight:800;margin:24px 0}
         .meta{margin-top:24px;color:#374151}
         .row{display:flex;justify-content:space-between;margin-top:40px}
         .sig{border-top:1px solid #e5e7eb;padding-top:8px;width:40%;text-align:center;color:#6b7280}
@@ -653,8 +841,8 @@ export default function RiskCourseApp() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <Stat icon={Clock} label="Duración" value={`${COURSE.simulator.durationMinutes} min`}/>
-              <Stat icon={ShieldAlert} label="Preguntas" value={totalSimQuestions}/>
-              <Stat icon={CheckCircle2} label="Mejor puntaje" value={`${bestSimScore}/${totalSimQuestions}`}/>
+              <Stat icon={ShieldAlert} label="Preguntas" value={COURSE.simulator.questions.length}/>
+              <Stat icon={CheckCircle2} label="Mejor puntaje" value={`${bestSimScore}/${COURSE.simulator.questions.length}`}/>
             </CardContent>
           </Card>
 
@@ -675,7 +863,7 @@ export default function RiskCourseApp() {
           </Card>
         </aside>
 
-        {/* Contenido */}
+        {/* Contenido (solo módulo seleccionado) */}
         <section>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             <Card>
@@ -685,11 +873,7 @@ export default function RiskCourseApp() {
               <CardContent className="space-y-6">
                 {/* Lecciones */}
                 {currentModule.lessons?.map((l) => (
-                  <div key={l.id} className="rounded-2xl border p-4">
-                    <div className="mb-1 text-sm text-gray-500">Lección</div>
-                    <div className="text-base font-medium">{l.title}</div>
-                    <p className="mt-2 text-sm text-gray-600">{l.content}</p>
-                  </div>
+                  <LessonCard key={l.id} lesson={l} />
                 ))}
 
                 {/* Actividades */}
@@ -744,6 +928,7 @@ export default function RiskCourseApp() {
     </div>
   )
 }
+
 
 
 
