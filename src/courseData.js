@@ -1,13 +1,12 @@
 // courseData.js
-// Contiene el contenido del curso: módulos, lecciones, actividades y mini-exámenes.
-// OJO: las preguntas del simulador final NO van aquí. Solo la duración.
-// Las preguntas del simulador están en finalExam.js.
+// Contiene el contenido del curso (módulos, lecciones, actividades y mini-exámenes).
+// OJO: el banco de preguntas del simulador final está en finalExam.js.
 
 const COURSE = {
   title: 'Preparación para Certificación en Gestión de Riesgos (PMI-RMP®)',
   subtitle: 'Curso práctico con actividades y exámenes',
   simulator: {
-    durationMinutes: 60, // Las preguntas se importan desde finalExam.js
+    durationMinutes: 60, // Las preguntas del simulador se cargan desde finalExam.js
   },
   modules: [
     {
@@ -77,8 +76,7 @@ Cada proceso tiene entradas, herramientas y salidas específicas (ITTOs) que con
                 'Apetito solo a amenazas',
               ],
               answerIndex: 1,
-              explanation:
-                'Apetito (macro) vs Tolerancia (límites operativos).',
+              explanation: 'Apetito (macro) vs Tolerancia (límites operativos).',
               domain: 'Fundamentos',
             },
             {
@@ -98,15 +96,9 @@ Cada proceso tiene entradas, herramientas y salidas específicas (ITTOs) que con
               id: 'm1q1_3',
               prompt:
                 'Qué artefacto define la estrategia general de gestión de riesgos?',
-              options: [
-                'Acta',
-                'Plan de riesgos',
-                'Registro de interesados',
-                'Matriz RACI',
-              ],
+              options: ['Acta', 'Plan de riesgos', 'Registro de interesados', 'Matriz RACI'],
               answerIndex: 1,
-              explanation:
-                'El plan de riesgos define enfoque, roles y reporting.',
+              explanation: 'El plan de riesgos define enfoque, roles y reporting.',
               domain: 'Planificación',
             },
             {
@@ -132,8 +124,7 @@ Cada proceso tiene entradas, herramientas y salidas específicas (ITTOs) que con
                 'PMO obligatoriamente',
               ],
               answerIndex: 1,
-              explanation:
-                'Se establece a nivel organizacional/patrocinio.',
+              explanation: 'Se establece a nivel organizacional/patrocinio.',
               domain: 'Gobernanza',
             },
             {
@@ -208,8 +199,7 @@ Un owner por riesgo asegura ejecución de respuestas y seguimiento.`,
           questions: [
             {
               id: 'm2q1_1',
-              prompt:
-                '¿Qué artefacto organiza categorías de riesgo por áreas?',
+              prompt: '¿Qué artefacto organiza categorías de riesgo por áreas?',
               options: ['RACI', 'RBS', 'OBS', 'PBS'],
               answerIndex: 1,
               explanation: 'RBS = Risk Breakdown Structure.',
@@ -217,12 +207,10 @@ Un owner por riesgo asegura ejecución de respuestas y seguimiento.`,
             },
             {
               id: 'm2q1_2',
-              prompt:
-                'Qué sección del plan define cuándo reportar y a quién?',
+              prompt: 'Qué sección del plan define cuándo reportar y a quién?',
               options: ['Metodología', 'Reporting', 'Criterios', 'Cronograma'],
               answerIndex: 1,
-              explanation:
-                'El plan especifica formatos y frecuencia de reporting.',
+              explanation: 'El plan especifica formatos y frecuencia de reporting.',
               domain: 'Planificación',
             },
             {
@@ -261,8 +249,7 @@ Un owner por riesgo asegura ejecución de respuestas y seguimiento.`,
                 'No se relacionan',
               ],
               answerIndex: 1,
-              explanation:
-                'Umbrales traducen apetito a límites medibles.',
+              explanation: 'Umbrales traducen apetito a límites medibles.',
               domain: 'Planificación',
             },
           ],
@@ -345,8 +332,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
             },
             {
               id: 'm3q1_3',
-              prompt:
-                'Elemento que NO es típico del registro en esta fase:',
+              prompt: 'Elemento que NO es típico del registro en esta fase:',
               options: [
                 'Causa',
                 'Impacto monetario exacto',
@@ -354,18 +340,15 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
                 'Disparadores',
               ],
               answerIndex: 1,
-              explanation:
-                'El impacto monetario exacto es del cuantitativo.',
+              explanation: 'El impacto monetario exacto es del cuantitativo.',
               domain: 'Registro',
             },
             {
               id: 'm3q1_4',
-              prompt:
-                'Qué técnica ayuda a descubrir “puntos ciegos” regulatorios?',
+              prompt: 'Qué técnica ayuda a descubrir “puntos ciegos” regulatorios?',
               options: ['Revisión normativa', 'Mapa de calor', 'PERT', 'Planning poker'],
               answerIndex: 0,
-              explanation:
-                'La base regulatoria es crítica para cumplimiento.',
+              explanation: 'La base regulatoria es crítica para cumplimiento.',
               domain: 'Identificación',
             },
             {
@@ -383,8 +366,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
             },
             {
               id: 'm3q1_6',
-              prompt:
-                'Qué documento histórico ayuda más en identificación?',
+              prompt: 'Qué documento histórico ayuda más en identificación?',
               options: [
                 'Lecciones aprendidas',
                 'Presupuesto vigente',
@@ -392,8 +374,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
                 'WBS sólo',
               ],
               answerIndex: 0,
-              explanation:
-                'Lecciones aprendidas evitan repetir errores.',
+              explanation: 'Lecciones aprendidas evitan repetir errores.',
               domain: 'Lecciones',
             },
           ],
@@ -442,8 +423,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
           title: 'Priorización cualitativa',
           brief:
             'Construye una matriz prob-impacto para 12 riesgos identificados y prioriza el Top 5.',
-          placeholder:
-            'Pega tu matriz o describe el Top 5 con razones…',
+          placeholder: 'Pega tu matriz o describe el Top 5 con razones…',
         },
       ],
       quizzes: [
@@ -487,8 +467,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
             },
             {
               id: 'm4q1_4',
-              prompt:
-                'Si hay correlación alta entre riesgos, la simulación debe:',
+              prompt: 'Si hay correlación alta entre riesgos, la simulación debe:',
               options: [
                 'Ignorarla',
                 'Asumir independencia',
@@ -496,8 +475,7 @@ Mantén descripciones claras: “Debido a [causa], podría ocurrir [riesgo], lo 
                 'Reducir iteraciones',
               ],
               answerIndex: 2,
-              explanation:
-                'La correlación cambia la dispersión de resultados.',
+              explanation: 'La correlación cambia la dispersión de resultados.',
               domain: 'Cuantitativo',
             },
             {
@@ -606,12 +584,7 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
             {
               id: 'm5q1_3',
               prompt: 'Las reservas de gestión cubren:',
-              options: [
-                'Riesgos identificados',
-                'Riesgos desconocidos',
-                'Costos fijos',
-                'Gastos operativos',
-              ],
+              options: ['Riesgos identificados', 'Riesgos desconocidos', 'Costos fijos', 'Gastos operativos'],
               answerIndex: 1,
               explanation: 'Gestión = unknown unknowns.',
               domain: 'Reservas',
@@ -619,12 +592,7 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
             {
               id: 'm5q1_4',
               prompt: 'Qué debes definir para poder activar una contingencia?',
-              options: [
-                'KPI de ventas',
-                'Trigger/condición',
-                'Ruta crítica',
-                'SLA del proveedor',
-              ],
+              options: ['KPI de ventas', 'Trigger/condición', 'Ruta crítica', 'SLA del proveedor'],
               answerIndex: 1,
               explanation: 'Trigger define cuándo activar.',
               domain: 'Planificación',
@@ -634,8 +602,7 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
               prompt: 'Quién ejecuta la respuesta?',
               options: ['Propietario del riesgo', 'PMO', 'Patrocinador', 'QA'],
               answerIndex: 0,
-              explanation:
-                'Owner responsable de ejecutar/coordinar.',
+              explanation: 'Owner responsable de ejecutar/coordinar.',
               domain: 'Gobernanza',
             },
           ],
@@ -710,20 +677,13 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
                 'Ignorarlo',
               ],
               answerIndex: 1,
-              explanation:
-                'Pasa a issue/gestión de incidentes.',
+              explanation: 'Pasa a issue/gestión de incidentes.',
               domain: 'Control',
             },
             {
               id: 'm6q1_3',
-              prompt:
-                'Qué documento debe actualizarse tras ejecutar una respuesta?',
-              options: [
-                'Diccionario EDT',
-                'Registro de riesgos',
-                'Acta constitución',
-                'Contrato marco',
-              ],
+              prompt: 'Qué documento debe actualizarse tras ejecutar una respuesta?',
+              options: ['Diccionario EDT', 'Registro de riesgos', 'Acta constitución', 'Contrato marco'],
               answerIndex: 1,
               explanation: 'Registro refleja estado/residual.',
               domain: 'Registro',
@@ -738,8 +698,7 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
                 'Cuando el patrocinador lo pida',
               ],
               answerIndex: 1,
-              explanation:
-                'Se cierra si pierde relevancia o ya no puede ocurrir.',
+              explanation: 'Se cierra si pierde relevancia o ya no puede ocurrir.',
               domain: 'Control',
             },
             {
@@ -752,8 +711,7 @@ Define triggers observables para activar planes. Documenta supuestos y límites 
                 'Delegar todo a QA',
               ],
               answerIndex: 1,
-              explanation:
-                'Lecciones integradas y reutilizadas.',
+              explanation: 'Lecciones integradas y reutilizadas.',
               domain: 'Mejora continua',
             },
           ],
