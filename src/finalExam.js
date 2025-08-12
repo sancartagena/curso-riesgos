@@ -1,6 +1,5 @@
 // finalExam.js
 // Banco de preguntas del simulador/examen final.
-// Se importa en App.jsx y se combina con durationMinutes de courseData.js.
 
 const FINAL_EXAM = [
   {
@@ -39,8 +38,7 @@ const FINAL_EXAM = [
       'Una oportunidad permitiría reducir 8% el tiempo de pruebas si se contrata un experto externo. Mejor estrategia:',
     options: ['Aceptar', 'Explotar', 'Transferir', 'Mitigar'],
     answerIndex: 1,
-    explanation:
-      'Explotar maximiza la probabilidad de que la oportunidad ocurra.',
+    explanation: 'Explotar maximiza la probabilidad de que la oportunidad ocurra.',
     domain: 'Respuestas a oportunidades',
   },
   {
@@ -54,8 +52,7 @@ const FINAL_EXAM = [
       'Solicitar cambio a la EDT',
     ],
     answerIndex: 1,
-    explanation:
-      'Activa la contingencia y actualiza el registro/seguimiento.',
+    explanation: 'Activa la contingencia y actualiza el registro/seguimiento.',
     domain: 'Monitoreo y control',
   },
   {
@@ -103,8 +100,7 @@ const FINAL_EXAM = [
   },
   {
     id: 'simq8',
-    prompt:
-      'Reserva usada para eventos identificados con plan de respuesta:',
+    prompt: 'Reserva usada para eventos identificados con plan de respuesta:',
     options: [
       'Reserva de gestión',
       'Reserva de contingencia',
@@ -118,8 +114,7 @@ const FINAL_EXAM = [
   },
   {
     id: 'simq9',
-    prompt:
-      'Mejor técnica para descubrir riesgos sistémicos entre áreas:',
+    prompt: 'Mejor técnica para descubrir riesgos sistémicos entre áreas:',
     options: [
       'Lista de verificación',
       'Entrevistas 1:1',
@@ -142,8 +137,7 @@ const FINAL_EXAM = [
       'ROI contable',
     ],
     answerIndex: 0,
-    explanation:
-      'El EMV (Expected Monetary Value) guía la elección bajo incertidumbre.',
+    explanation: 'El EMV guía la elección bajo incertidumbre.',
     domain: 'Cuantitativo',
   },
   {
@@ -167,30 +161,18 @@ const FINAL_EXAM = [
     id: 'simq13',
     prompt:
       'Qué documento define “quién informa qué, a quién y cuándo” sobre riesgos?',
-    options: [
-      'Plan de comunicaciones',
-      'Registro de interesados',
-      'Plan de riesgos',
-      'Acta de constitución',
-    ],
+    options: ['Plan de comunicaciones', 'Registro de interesados', 'Plan de riesgos', 'Acta de constitución'],
     answerIndex: 2,
-    explanation:
-      'El plan de riesgos incluye reporting/formatos de comunicación.',
+    explanation: 'El plan de riesgos incluye reporting/formatos de comunicación.',
     domain: 'Planificación',
   },
   {
     id: 'simq14',
     prompt:
       'Qué técnica acelera la identificación en grupos numerosos y reduce sesgo del dominador?',
-    options: [
-      'Entrevistas',
-      'Delphi',
-      'Revisión de documentos',
-      'Lluvia de ideas abierta',
-    ],
+    options: ['Entrevistas', 'Delphi', 'Revisión de documentos', 'Lluvia de ideas abierta'],
     answerIndex: 1,
-    explanation:
-      'Delphi logra consenso anónimo y reduce sesgos.',
+    explanation: 'Delphi logra consenso anónimo y reduce sesgos.',
     domain: 'Identificación',
   },
   {
@@ -199,8 +181,7 @@ const FINAL_EXAM = [
       'Si la distribución de duraciones es altamente asimétrica, qué simulación captura mejor esa realidad?',
     options: ['Uniforme', 'Normal', 'Triangular/PERT', 'Binomial'],
     answerIndex: 2,
-    explanation:
-      'Triangular/PERT modelan asimetría en tareas.',
+    explanation: 'Triangular/PERT modelan asimetría en tareas.',
     domain: 'Cuantitativo',
   },
   {
@@ -209,8 +190,7 @@ const FINAL_EXAM = [
       'Cambiar proveedor para reducir probabilidad de falla es ejemplo de:',
     options: ['Mitigar', 'Transferir', 'Aceptar', 'Escalar'],
     answerIndex: 0,
-    explanation:
-      'Mitigar reduce probabilidad/impacto de amenazas.',
+    explanation: 'Mitigar reduce probabilidad/impacto de amenazas.',
     domain: 'Respuestas',
   },
   {
@@ -224,39 +204,28 @@ const FINAL_EXAM = [
       'Fecha de identificación',
     ],
     answerIndex: 2,
-    explanation:
-      'Estrategia + plan permiten evaluar ejecución/efectividad.',
+    explanation: 'Estrategia + plan permiten evaluar ejecución/efectividad.',
     domain: 'Registro',
   },
   {
     id: 'simq18',
-    prompt:
-      'Cuál es la mejor fuente para identificar riesgos de cumplimiento en banca?',
-    options: [
-      'Lecciones aprendidas internas',
-      'Normativa del regulador',
-      'Encuesta de clima',
-      'WBS',
-    ],
+    prompt: 'Cuál es la mejor fuente para identificar riesgos de cumplimiento en banca?',
+    options: ['Lecciones aprendidas internas', 'Normativa del regulador', 'Encuesta de clima', 'WBS'],
     answerIndex: 1,
-    explanation:
-      'La normativa aplicable origina requisitos y riesgos de cumplimiento.',
+    explanation: 'La normativa aplicable origina requisitos y riesgos de cumplimiento.',
     domain: 'Identificación',
   },
   {
     id: 'simq19',
-    prompt:
-      'Una respuesta a oportunidad “compartir” se parece más a:',
+    prompt: 'Una respuesta a oportunidad “compartir” se parece más a:',
     options: ['Mitigar', 'Transferir', 'Explotar', 'Escalar'],
     answerIndex: 1,
-    explanation:
-      'Compartir oportunidades = alianza/contrato para repartir beneficios.',
+    explanation: 'Compartir oportunidades = alianza/contrato para repartir beneficios.',
     domain: 'Respuestas',
   },
   {
     id: 'simq20',
-    prompt:
-      'Qué debes hacer si un riesgo residual supera el umbral?',
+    prompt: 'Qué debes hacer si un riesgo residual supera el umbral?',
     options: [
       'Aceptarlo documentado',
       'Escalarlo y/o planificar respuesta adicional',
@@ -264,8 +233,7 @@ const FINAL_EXAM = [
       'Ignorarlo si la probabilidad es baja',
     ],
     answerIndex: 1,
-    explanation:
-      'Si supera umbral, requiere decisión/escalamiento o respuesta extra.',
+    explanation: 'Si supera umbral, requiere decisión/escalamiento o respuesta extra.',
     domain: 'Monitoreo',
   },
   {
@@ -278,62 +246,39 @@ const FINAL_EXAM = [
       'Ninguna',
     ],
     answerIndex: 1,
-    explanation:
-      'EDT = entregables; RBS = categorías/fuentes de riesgo.',
+    explanation: 'EDT = entregables; RBS = categorías/fuentes de riesgo.',
     domain: 'Fundamentos',
   },
   {
     id: 'simq22',
     prompt: 'Cuál es una salida del análisis cualitativo?',
-    options: [
-      'Lista priorizada de riesgos',
-      'Curvas S',
-      'EMV de alternativas',
-      'Plan de reservas',
-    ],
+    options: ['Lista priorizada de riesgos', 'Curvas S', 'EMV de alternativas', 'Plan de reservas'],
     answerIndex: 0,
-    explanation:
-      'Salida típica: lista priorizada con puntuaciones y racionales.',
+    explanation: 'Salida típica: lista priorizada con puntuaciones y racionales.',
     domain: 'Cualitativo',
   },
   {
     id: 'simq23',
-    prompt:
-      'Quién es responsable de ejecutar el plan de respuesta?',
+    prompt: 'Quién es responsable de ejecutar el plan de respuesta?',
     options: ['PMO', 'Propietario del riesgo', 'Patrocinador', 'Comité de dirección'],
     answerIndex: 1,
-    explanation:
-      'Cada riesgo tiene un owner para ejecutar/coordinar respuestas.',
+    explanation: 'Cada riesgo tiene un owner para ejecutar/coordinar respuestas.',
     domain: 'Gobernanza',
   },
   {
     id: 'simq24',
-    prompt:
-      'Cuál métrica mirarías para saber si una respuesta de transferencia (seguro) fue adecuada?',
-    options: [
-      'Prima vs cobertura y deducible',
-      'Nº de reuniones',
-      'Duración del proyecto',
-      '% de alcance completado',
-    ],
+    prompt: 'Cuál métrica mirarías para saber si una respuesta de transferencia (seguro) fue adecuada?',
+    options: ['Prima vs cobertura y deducible', 'Nº de reuniones', 'Duración del proyecto', '% de alcance completado'],
     answerIndex: 0,
-    explanation:
-      'Transferir = analizar cobertura efectiva y costo asociado.',
+    explanation: 'Transferir = analizar cobertura efectiva y costo asociado.',
     domain: 'Respuestas',
   },
   {
     id: 'simq25',
-    prompt:
-      'Qué práctica evita “listas infinitas” y centra el análisis en lo material?',
-    options: [
-      'Categorización RBS',
-      'Definir criterios y umbrales claros',
-      'Reuniones más largas',
-      'Añadir más participantes',
-    ],
+    prompt: 'Qué práctica evita “listas infinitas” y centra el análisis en lo material?',
+    options: ['Categorización RBS', 'Definir criterios y umbrales claros', 'Reuniones más largas', 'Añadir más participantes'],
     answerIndex: 1,
-    explanation:
-      'Criterios/umbrales evitan dispersión y enfocan en lo relevante.',
+    explanation: 'Criterios/umbrales evitan dispersión y enfocan en lo relevante.',
     domain: 'Planificación',
   },
 ];
