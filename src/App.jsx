@@ -427,7 +427,7 @@ function Activity({ activity, savedText = "", onSave }) {
 }
 
 // ———————————— App principal ————————————
-export default function RiskCourseApp() {() {
+export default function RiskCourseApp() {
   const [state, setState] = useState(() =>
     loadState() || {
       currentModuleId: COURSE.modules[0].id,
